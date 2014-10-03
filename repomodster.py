@@ -36,8 +36,7 @@ except:
 baseurl = 'http://dl.fedoraproject.org/pub/epel/%d/SRPMS' % epel
 repomd  = baseurl + '/repodata/repomd.xml'
 
-# cachesubdir = re.sub(r'\.py$', '', os.path.basename(__file__))
-cachedir  = os.getenv('HOME') + "/.cache/repomodster"
+cachedir  = os.getenv('HOME') + "/.cache/epeldb"
 cachets   = cachedir + "/primary.epel%d.ts" % epel
 cachedb   = cachedir + "/primary.epel%d.db" % epel
 
