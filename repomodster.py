@@ -40,9 +40,6 @@ for op,val in ops:
     elif op == '-s': printsrpm = True
     else           : epel = int(op[1:])
 
-if not pkg_names:
-    usage()
-
 baseurl = 'http://dl.fedoraproject.org/pub/epel/%d/%s' % (epel, what)
 repomd  = baseurl + '/repodata/repomd.xml'
 
@@ -101,7 +98,7 @@ def do_cache_setup():
         # touch ts file to mark as recent
         os.utime(cachets, None)
 
-def getsql(pkg_names):
+def getsql():
     def like(name):
         return "%s ?" % ("like" if "%" in name else "=")
 
@@ -119,13 +116,16 @@ def getsql(pkg_names):
     return ' '.join([select, where, orderby])
 
 def main():
+    if not pkg_names:
+        usage()
+
     if not cache_is_recent():
         do_cache_setup()
 
     db = sqlite3.connect(cachedb)
     c  = db.cursor()
 
-    sql = getsql(pkg_names)
+    sql = getsql()
     c.execute(sql, pkg_names)
 
     for href,srpm in c:
