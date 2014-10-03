@@ -36,9 +36,10 @@ except:
 baseurl = 'http://dl.fedoraproject.org/pub/epel/%d/SRPMS' % epel
 repomd  = baseurl + '/repodata/repomd.xml'
 
+# cachesubdir = re.sub(r'\.py$', '', os.path.basename(__file__))
 cachedir  = os.getenv('HOME') + "/.cache/repomodster"
-cachets   = cachedir + "/primary.ts"
-cachedb   = cachedir + "/primary.sqlite"
+cachets   = cachedir + "/primary.epel%d.ts" % epel
+cachedb   = cachedir + "/primary.epel%d.db" % epel
 
 def get_repomd_xml():
     handle = urllib2.urlopen(repomd)
