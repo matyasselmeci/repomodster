@@ -101,36 +101,42 @@ def do_cache_setup():
         # touch ts file to mark as recent
         os.utime(cachets, None)
 
-if not cache_is_recent():
-    do_cache_setup()
+def getsql(pkg_names):
+    def like(name):
+        return "%s ?" % ("like" if "%" in name else "=")
 
-db = sqlite3.connect(cachedb)
-c  = db.cursor()
-
-def like(name):
-    return "%s ?" % ("like" if "%" in name else "=")
-
-if '%' in ''.join(pkg_names) or len(pkg_names) == 1:
-    nameclause = ' or name '.join(map(like,pkg_names))
-else:
-    nameclause = "in (" + ','.join('?' for x in pkg_names) + ")"
-
-select  = "select location_href, rpm_sourcerpm from packages"
-where   = "where name " + nameclause
-if printsrpm:
-    orderby = "order by rpm_sourcerpm, name, version, release, arch"
-else:
-    orderby = "order by name, version, release, arch"
-sql = ' '.join([select, where, orderby])
-
-c.execute(sql, pkg_names)
-
-for href,srpm in c:
-    if printsrpm and what != 'SRPMS':
-        srpm = srpm.rsplit('-',2)[0]
-        print "[" + srpm + "]",
-    if printurl:
-        print baseurl + "/" + href
+    if '%' in ''.join(pkg_names) or len(pkg_names) == 1:
+        nameclause = ' or name '.join(map(like,pkg_names))
     else:
-        print href.split('/')[-1]
+        nameclause = "in (" + ','.join('?' for x in pkg_names) + ")"
+
+    select  = "select location_href, rpm_sourcerpm from packages"
+    where   = "where name " + nameclause
+    if printsrpm:
+        orderby = "order by rpm_sourcerpm, name, version, release, arch"
+    else:
+        orderby = "order by name, version, release, arch"
+    return ' '.join([select, where, orderby])
+
+def main():
+    if not cache_is_recent():
+        do_cache_setup()
+
+    db = sqlite3.connect(cachedb)
+    c  = db.cursor()
+
+    sql = getsql(pkg_names)
+    c.execute(sql, pkg_names)
+
+    for href,srpm in c:
+        if printsrpm and what != 'SRPMS':
+            srpm = srpm.rsplit('-',2)[0]
+            print "[" + srpm + "]",
+        if printurl:
+            print baseurl + "/" + href
+        else:
+            print href.split('/')[-1]
+
+if __name__ == '__main__':
+    main()
 
