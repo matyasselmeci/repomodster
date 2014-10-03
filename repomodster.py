@@ -18,9 +18,11 @@ except ImportError:  # if sys.version_info[0:2] == (2,4):
     import elementtree.ElementTree as et
 
 def usage(status=0):
-    print "usage: %s [-u] [-b] [EL] PACKAGE [...]" % os.path.basename(__file__)
+    script = os.path.basename(__file__)
+    print "usage: %s [-u] [-b] [-s] [EL] PACKAGE [...]" % script
     print "specify -u to print full download urls"
     print "specify -b to match binary packages (default=%s)" % what
+    print "specify -s to print source package name too"
     print "specify 5,6,7 for EL release series (default=%d)" % epel
     print "each PACKAGE can be a full package name or contain '%' wildcards"
     sys.exit(status)
@@ -28,6 +30,7 @@ def usage(status=0):
 epel = 6
 what = 'SRPMS'
 printurl = False
+printsrpm = False
 
 args = sys.argv[1:]
 if args and args[0] == '-u':
@@ -35,6 +38,9 @@ if args and args[0] == '-u':
     args[:1] = []
 if args and args[0] == '-b':
     what = 'x86_64'
+    args[:1] = []
+if args and args[0] == '-s':
+    printsrpm = True
     args[:1] = []
 if len(args) >= 2:
     if re.search(r'^[567]$', args[0]):
@@ -107,14 +113,20 @@ if '%' in ''.join(pkg_names) or len(pkg_names) == 1:
 else:
     nameclause = "in (" + ','.join('?' for x in pkg_names) + ")"
 
-select  = "select location_href from packages"
+select  = "select location_href, rpm_sourcerpm from packages"
 where   = "where name " + nameclause
-orderby = "order by name, version, release, arch"
+if printsrpm:
+    orderby = "order by rpm_sourcerpm, name, version, release, arch"
+else:
+    orderby = "order by name, version, release, arch"
 sql = ' '.join([select, where, orderby])
 
 c.execute(sql, pkg_names)
 
-for href, in c:
+for href,srpm in c:
+    if printsrpm:
+        srpm = srpm.rsplit('-',2)[0]
+        print "[" + srpm + "]",
     if printurl:
         print baseurl + "/" + href
     else:
