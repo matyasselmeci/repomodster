@@ -18,18 +18,23 @@ except ImportError:  # if sys.version_info[0:2] == (2,4):
     import elementtree.ElementTree as et
 
 def usage(status=0):
-    print "usage: %s [-u] [EL] PACKAGE [...]" % os.path.basename(__file__)
+    print "usage: %s [-u] [-b] [EL] PACKAGE [...]" % os.path.basename(__file__)
     print "specify -u to print full download urls"
+    print "specify -b to match binary packages (default=%s)" % what
     print "specify 5,6,7 for EL release series (default=%d)" % epel
     print "each PACKAGE can be a full package name or contain '%' wildcards"
     sys.exit(status)
 
 epel = 6
+what = 'SRPMS'
 printurl = False
 
 args = sys.argv[1:]
 if args and args[0] == '-u':
     printurl = True
+    args[:1] = []
+if args and args[0] == '-b':
+    what = 'x86_64'
     args[:1] = []
 if len(args) >= 2:
     if re.search(r'^[567]$', args[0]):
@@ -40,12 +45,12 @@ if args:
 else:
     usage()
 
-baseurl = 'http://dl.fedoraproject.org/pub/epel/%d/SRPMS' % epel
+baseurl = 'http://dl.fedoraproject.org/pub/epel/%d/%s' % (epel, what)
 repomd  = baseurl + '/repodata/repomd.xml'
 
 cachedir  = os.getenv('HOME') + "/.cache/epeldb"
-cachets   = cachedir + "/primary.epel%d.ts" % epel
-cachedb   = cachedir + "/primary.epel%d.db" % epel
+cachets   = cachedir + "/primary.epel%d.%s.ts" % (epel, what)
+cachedb   = cachedir + "/primary.epel%d.%s.db" % (epel, what)
 
 def get_repomd_xml():
     handle = urllib2.urlopen(repomd)
