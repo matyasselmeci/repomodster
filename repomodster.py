@@ -4,12 +4,14 @@
 
 # let's have some fun with repomd.xml's ...
 
-import sys
 import os
 import re
+import sys
 import bz2
+import time
 import urllib2
 import sqlite3
+
 try:
     import xml.etree.ElementTree as et
 except ImportError:  # if sys.version_info[0:2] == (2,4):
@@ -49,31 +51,44 @@ def get_repomd_xml():
 def is_pdb(x):
     return x.get('type') == 'primary_db'
 
-tree = get_repomd_xml()
-datas = tree.findall('data')
-primary = filter(is_pdb, datas)[0]
-primary_href = primary.find('location').get('href')
-primary_url = baseurl + '/' + primary_href
-primary_ts = float(primary.find('timestamp').text)  # hey let's use this...
+def cache_is_recent():
+    # if the cache is < 1h old, don't even bother to see if there's a newer one
+    return (os.path.exists(cachets) and
+            os.path.exists(cachedb) and
+            os.stat(cachets).st_mtime + 3600 > time.time())
 
-if not os.path.exists(cachedir):
-    os.makedirs(cachedir)
-if os.path.exists(cachets) and os.path.exists(cachedb):
-    last_ts = float(open(cachets).read().strip())
-else:
-    last_ts = 0
-    print >> open(cachets, "w"), primary_ts
+def do_cache_setup():
+    tree = get_repomd_xml()
+    datas = tree.findall('data')
+    primary = filter(is_pdb, datas)[0]
+    primary_href = primary.find('location').get('href')
+    primary_url = baseurl + '/' + primary_href
+    primary_ts = float(primary.find('timestamp').text)  # hey let's use this...
 
-if primary_ts > last_ts:
-    primary_zip = urllib2.urlopen(primary_url).read()
-    primary_dat = bz2.decompress(primary_zip)
-    open(cachedb, "w").write(primary_dat)
+    if not os.path.exists(cachedir):
+        os.makedirs(cachedir)
+    if os.path.exists(cachets) and os.path.exists(cachedb):
+        last_ts = float(open(cachets).read().strip())
+    else:
+        last_ts = 0
+        print >> open(cachets, "w"), primary_ts
+
+    if primary_ts > last_ts:
+        primary_zip = urllib2.urlopen(primary_url).read()
+        primary_dat = bz2.decompress(primary_zip)
+        open(cachedb, "w").write(primary_dat)
+    else:
+        # touch ts file to mark as recent
+        os.utime(cachets, None)
+
+if not cache_is_recent():
+    do_cache_setup()
 
 db = sqlite3.connect(cachedb)
 c  = db.cursor()
 c.execute("select name, version, release, arch from packages where name = ?",
           [pkg_name])
-nvra = c.fetchone()
 
-print '-'.join(nvra[:3]) + "." + nvra[3] + ".rpm"
+for nvra in c:
+    print '-'.join(nvra[:3]) + "." + nvra[3] + ".rpm"
 
