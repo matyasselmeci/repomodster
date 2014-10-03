@@ -20,11 +20,11 @@ except ImportError:  # if sys.version_info[0:2] == (2,4):
 
 def usage(status=0):
     script = os.path.basename(__file__)
-    print "usage: %s [-u] [-b] [-s] [EL] PACKAGE [...]" % script
+    print "usage: %s [-ubs567] PACKAGE [...]" % script
     print "specify -u to print full download urls"
     print "specify -b to match binary packages (default=%s)" % what
     print "specify -s to print source package name too"
-    print "specify 5,6,7 for EL release series (default=%d)" % epel
+    print "specify -5,-6,-7 for EL release series (default=%d)" % epel
     print "each PACKAGE can be a full package name or contain '%' wildcards"
     sys.exit(status)
 
@@ -33,19 +33,14 @@ what = 'SRPMS'
 printurl = False
 printsrpm = False
 
-ops,args = getopt.getopt(sys.argv[1:], 'ubs')
+ops,pkg_names = getopt.getopt(sys.argv[1:], 'ubs567')
 for op,val in ops:
     if   op == '-u': printurl = True
     elif op == '-b': what = 'x86_64'
     elif op == '-s': printsrpm = True
+    else           : epel = int(op[1:])
 
-if len(args) >= 2:
-    if re.search(r'^[567]$', args[0]):
-        epel = int(args[0])
-        args[:1] = []
-if args:
-    pkg_names = args
-else:
+if not pkg_names:
     usage()
 
 baseurl = 'http://dl.fedoraproject.org/pub/epel/%d/%s' % (epel, what)
