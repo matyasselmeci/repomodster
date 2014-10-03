@@ -95,8 +95,12 @@ if '%' in ''.join(pkg_names) or len(pkg_names) == 1:
 else:
     nameclause = "in (" + ','.join('?' for x in pkg_names) + ")"
 
-c.execute("select name, version, release, arch from packages where name " +
-          nameclause, pkg_names)
+select  = "select name, version, release, arch from packages"
+where   = "where name " + nameclause
+orderby = "order by name, version, release, arch"
+sql = ' '.join([select, where, orderby])
+
+c.execute(sql, pkg_names)
 
 for nvra in c:
     print '-'.join(nvra[:3]) + "." + nvra[3] + ".rpm"
