@@ -18,12 +18,19 @@ except ImportError:  # if sys.version_info[0:2] == (2,4):
     import elementtree.ElementTree as et
 
 def usage(status=0):
-    print "usage: %s [EL] PACKAGE [...]" % os.path.basename(__file__)
+    print "usage: %s [-u] [EL] PACKAGE [...]" % os.path.basename(__file__)
+    print "specify -u to print full download urls"
+    print "specify 5,6,7 for EL release series (default=%d)" % epel
+    print "each PACKAGE can be a full package name or contain '%' wildcards"
     sys.exit(status)
 
 epel = 6
+printurl = False
 
 args = sys.argv[1:]
+if args and args[0] == '-u':
+    printurl = True
+    args[:1] = []
 if len(args) >= 2:
     if re.search(r'^[567]$', args[0]):
         epel = int(args[0])
@@ -95,13 +102,16 @@ if '%' in ''.join(pkg_names) or len(pkg_names) == 1:
 else:
     nameclause = "in (" + ','.join('?' for x in pkg_names) + ")"
 
-select  = "select name, version, release, arch from packages"
+select  = "select location_href from packages"
 where   = "where name " + nameclause
 orderby = "order by name, version, release, arch"
 sql = ' '.join([select, where, orderby])
 
 c.execute(sql, pkg_names)
 
-for nvra in c:
-    print '-'.join(nvra[:3]) + "." + nvra[3] + ".rpm"
+for href, in c:
+    if printurl:
+        print baseurl + "/" + href
+    else:
+        print href.split('/')[-1]
 
