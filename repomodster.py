@@ -87,8 +87,16 @@ if not cache_is_recent():
 db = sqlite3.connect(cachedb)
 c  = db.cursor()
 
-c.execute("select name, version, release, arch from packages where name in ("
-          + ','.join('?' for x in pkg_names) + ");", pkg_names)
+def like(name):
+    return "%s ?" % ("like" if "%" in name else "=")
+
+if '%' in ''.join(pkg_names) or len(pkg_names) == 1:
+    nameclause = ' or name '.join(map(like,pkg_names))
+else:
+    nameclause = "in (" + ','.join('?' for x in pkg_names) + ")"
+
+c.execute("select name, version, release, arch from packages where name " +
+          nameclause, pkg_names)
 
 for nvra in c:
     print '-'.join(nvra[:3]) + "." + nvra[3] + ".rpm"
