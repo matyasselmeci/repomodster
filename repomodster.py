@@ -18,19 +18,19 @@ except ImportError:  # if sys.version_info[0:2] == (2,4):
     import elementtree.ElementTree as et
 
 def usage(status=0):
-    print "usage: %s [EL] PACKAGE" % os.path.basename(__file__)
+    print "usage: %s [EL] PACKAGE [...]" % os.path.basename(__file__)
     sys.exit(status)
 
-try:
-    if len(sys.argv) == 3:
-        epel = int(sys.argv[1])
-        pkg_name = sys.argv[2]
-    elif len(sys.argv) == 2:
-        epel = 6
-        pkg_name = sys.argv[1]
-    else:
-        raise
-except:
+epel = 6
+
+args = sys.argv[1:]
+if len(args) >= 2:
+    if re.search(r'^[567]$', args[0]):
+        epel = int(args[0])
+        args[:1] = []
+if args:
+    pkg_names = args
+else:
     usage()
 
 baseurl = 'http://dl.fedoraproject.org/pub/epel/%d/SRPMS' % epel
@@ -52,7 +52,7 @@ def is_pdb(x):
     return x.get('type') == 'primary_db'
 
 def cache_is_recent():
-    # if the cache is < 1h old, don't even bother to see if there's a newer one
+    # if the cache is < 1h old, don't bother to see if there's a newer one
     return (os.path.exists(cachets) and
             os.path.exists(cachedb) and
             os.stat(cachets).st_mtime + 3600 > time.time())
@@ -86,8 +86,9 @@ if not cache_is_recent():
 
 db = sqlite3.connect(cachedb)
 c  = db.cursor()
-c.execute("select name, version, release, arch from packages where name = ?",
-          [pkg_name])
+
+c.execute("select name, version, release, arch from packages where name in ("
+          + ','.join('?' for x in pkg_names) + ");", pkg_names)
 
 for nvra in c:
     print '-'.join(nvra[:3]) + "." + nvra[3] + ".rpm"
