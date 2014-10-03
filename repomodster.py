@@ -58,6 +58,10 @@ cachedir  = os.getenv('HOME') + "/.cache/epeldb"
 cachets   = cachedir + "/primary.epel%d.%s.ts" % (epel, what)
 cachedb   = cachedir + "/primary.epel%d.%s.db" % (epel, what)
 
+def msg(m=""):
+    if sys.stderr.isatty():
+        sys.stderr.write("\r%s\x1b[K" % m)
+
 def get_repomd_xml():
     handle = urllib2.urlopen(repomd)
     xml = handle.read()
@@ -76,7 +80,9 @@ def cache_is_recent():
             os.stat(cachets).st_mtime + 3600 > time.time())
 
 def do_cache_setup():
+    msg("fetching latest repomd.xml...")
     tree = get_repomd_xml()
+    msg()
     datas = tree.findall('data')
     primary = filter(is_pdb, datas)[0]
     primary_href = primary.find('location').get('href')
@@ -92,9 +98,13 @@ def do_cache_setup():
         print >> open(cachets, "w"), primary_ts
 
     if primary_ts > last_ts:
+        msg("fetching latest primary db...")
         primary_zip = urllib2.urlopen(primary_url).read()
+        msg("decompressing...")
         primary_dat = bz2.decompress(primary_zip)
+        msg("saving cache...")
         open(cachedb, "w").write(primary_dat)
+        msg()
     else:
         # touch ts file to mark as recent
         os.utime(cachets, None)
@@ -124,7 +134,7 @@ sql = ' '.join([select, where, orderby])
 c.execute(sql, pkg_names)
 
 for href,srpm in c:
-    if printsrpm:
+    if printsrpm and what != 'SRPMS':
         srpm = srpm.rsplit('-',2)[0]
         print "[" + srpm + "]",
     if printurl:
