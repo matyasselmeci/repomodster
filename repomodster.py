@@ -9,6 +9,7 @@ import re
 import sys
 import bz2
 import time
+import getopt
 import urllib2
 import sqlite3
 
@@ -32,16 +33,12 @@ what = 'SRPMS'
 printurl = False
 printsrpm = False
 
-args = sys.argv[1:]
-if args and args[0] == '-u':
-    printurl = True
-    args[:1] = []
-if args and args[0] == '-b':
-    what = 'x86_64'
-    args[:1] = []
-if args and args[0] == '-s':
-    printsrpm = True
-    args[:1] = []
+ops,args = getopt.getopt(sys.argv[1:], 'ubs')
+for op,val in ops:
+    if   op == '-u': printurl = True
+    elif op == '-b': what = 'x86_64'
+    elif op == '-s': printsrpm = True
+
 if len(args) >= 2:
     if re.search(r'^[567]$', args[0]):
         epel = int(args[0])
