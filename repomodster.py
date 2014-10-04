@@ -107,13 +107,21 @@ def getsql():
     else:
         nameclause = "in (" + ','.join('?' for x in pkg_names) + ")"
 
-    select  = "select location_href, rpm_sourcerpm from packages"
+    select  = "select location_href, vrstrip(rpm_sourcerpm) from packages"
     where   = "where name " + nameclause
     if printsrpm:
         orderby = "order by rpm_sourcerpm, name, version, release, arch"
     else:
         orderby = "order by name, version, release, arch"
     return ' '.join([select, where, orderby])
+
+
+def regexp(rx,s):
+    return re.search(rx,s) is not None
+
+def vrstrip(s):
+    if s is not None:
+        return s.rsplit('-',2)[0]
 
 def main():
     if not pkg_names:
@@ -123,6 +131,8 @@ def main():
         do_cache_setup()
 
     db = sqlite3.connect(cachedb)
+    # db.create_function("regexp", 2, regexp)
+    db.create_function("vrstrip", 1, vrstrip)
     c  = db.cursor()
 
     sql = getsql()
@@ -130,7 +140,7 @@ def main():
 
     for href,srpm in c:
         if printsrpm and what != 'SRPMS':
-            srpm = srpm.rsplit('-',2)[0]
+            #srpm = srpm.rsplit('-',2)[0]
             print "[" + srpm + "]",
         if printurl:
             print baseurl + "/" + href
