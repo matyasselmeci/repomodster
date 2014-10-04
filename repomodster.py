@@ -133,7 +133,10 @@ def main():
         usage()
 
     if not cache_is_recent():
-        do_cache_setup()
+        try:
+            do_cache_setup()
+        except urllib2.URLError:
+            msg()
 
     db = sqlite3.connect(cachedb)
     # db.create_function("regexp", 2, regexp)
