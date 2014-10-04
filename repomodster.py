@@ -81,7 +81,7 @@ def do_cache_setup():
     if not os.path.exists(cachedir):
         os.makedirs(cachedir)
     if os.path.exists(cachets) and os.path.exists(cachedb):
-        last_ts = float(open(cachets).read().strip())
+        last_ts = float(open(cachets).readline().strip())
     else:
         last_ts = 0
         print >> open(cachets, "w"), primary_ts
