@@ -161,7 +161,7 @@ def main():
 
     for href,spkg in c:
         if printspkg and what != 'SRPMS':
-            print "[" + spkg + "]",
+            print "[%s]" % spkg,
         if printurl:
             print baseurl + "/" + href
         else:
