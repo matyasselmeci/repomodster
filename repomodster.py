@@ -54,6 +54,10 @@ def msg(m=""):
     if sys.stderr.isatty():
         sys.stderr.write("\r%s\x1b[K" % m)
 
+def fail(m="",status=1):
+    print >>sys.stderr, m
+    sys.exit(status)
+
 def get_repomd_xml():
     handle = urllib2.urlopen(repomd)
     xml = handle.read()
@@ -65,13 +69,14 @@ def get_repomd_xml():
 def is_pdb(x):
     return x.get('type') == 'primary_db'
 
+def cache_exists():
+    return os.path.exists(cachets) and os.path.exists(cachedb)
+
 def cache_is_recent():
     # if the cache is < 1h old, don't bother to see if there's a newer one
-    return (os.path.exists(cachets) and
-            os.path.exists(cachedb) and
-            os.stat(cachets).st_mtime + 3600 > time.time())
+    return cache_exists() and os.stat(cachets).st_mtime + 3600 > time.time()
 
-def do_cache_setup():
+def update_cache():
     msg("fetching latest repomd.xml...")
     tree = get_repomd_xml()
     msg()
@@ -83,7 +88,7 @@ def do_cache_setup():
 
     if not os.path.exists(cachedir):
         os.makedirs(cachedir)
-    if os.path.exists(cachets) and os.path.exists(cachedb):
+    if cache_exists():
         last_ts = float(open(cachets).readline().strip())
     else:
         last_ts = 0
@@ -100,6 +105,15 @@ def do_cache_setup():
     else:
         # touch ts file to mark as recent
         os.utime(cachets, None)
+
+def do_cache_setup():
+    if not cache_is_recent():
+        try:
+            update_cache()
+        except urllib2.URLError:
+            msg()
+            if not cache_exists():
+                fail("primary db cache does not exist and download failed...")
 
 def getsql():
     match = 'spkg' if matchspkg else 'name'
@@ -132,11 +146,7 @@ def main():
     if not pkg_names:
         usage()
 
-    if not cache_is_recent():
-        try:
-            do_cache_setup()
-        except urllib2.URLError:
-            msg()
+    do_cache_setup()
 
     db = sqlite3.connect(cachedb)
     # db.create_function("regexp", 2, regexp)
@@ -148,7 +158,6 @@ def main():
 
     for href,spkg in c:
         if printspkg and what != 'SRPMS':
-            #spkg = spkg.rsplit('-',2)[0]
             print "[" + spkg + "]",
         if printurl:
             print baseurl + "/" + href
