@@ -20,7 +20,7 @@ except ImportError:  # if sys.version_info[0:2] == (2,4):
 
 def usage(status=0):
     script = os.path.basename(__file__)
-    print "usage: %s [-ubsS567] PACKAGE [...]" % script
+    print "usage: %s [-ubsSc567] PACKAGE [...]" % script
     print
     print "each PACKAGE can be a full package name or contain '%' wildcards"
     print
@@ -29,6 +29,7 @@ def usage(status=0):
     print "  -b   match binary packages (default=%s)" % what
     print "  -s   print source package name too"
     print "  -S   match source package names for binary package list"
+    print "  -c   always use cached primary db (don't attempt to update)"
     print "  -5,-6,-7   specify EL release series (default=%d)" % epel
     sys.exit(status)
 
@@ -37,13 +38,15 @@ what = 'SRPMS'
 printurl = False
 printspkg = False
 matchspkg = False
+autoupdate = True
 
-ops,pkg_names = getopt.getopt(sys.argv[1:], 'ubsS567')
+ops,pkg_names = getopt.getopt(sys.argv[1:], 'ubsSc567')
 for op,val in ops:
     if   op == '-u': printurl = True
     elif op == '-b': what = 'x86_64'
     elif op == '-s': printspkg = True
     elif op == '-S': matchspkg = True
+    elif op == '-c': autoupdate = False
     else           : epel = int(op[1:])
 
 # fer later...
@@ -117,6 +120,11 @@ def update_cache():
         os.utime(cachets, None)
 
 def do_cache_setup():
+    if not autoupdate:
+        if cache_exists():
+            return
+        else:
+            fail("cache requested but does not exist...")
     if not cache_is_recent():
         try:
             update_cache()
