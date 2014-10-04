@@ -20,10 +20,11 @@ except ImportError:  # if sys.version_info[0:2] == (2,4):
 
 def usage(status=0):
     script = os.path.basename(__file__)
-    print "usage: %s [-ubs567] PACKAGE [...]" % script
+    print "usage: %s [-ubsS567] PACKAGE [...]" % script
     print "specify -u to print full download urls"
     print "specify -b to match binary packages (default=%s)" % what
     print "specify -s to print source package name too"
+    print "specify -S to match source package names for binary package list"
     print "specify -5,-6,-7 for EL release series (default=%d)" % epel
     print "each PACKAGE can be a full package name or contain '%' wildcards"
     sys.exit(status)
@@ -32,12 +33,14 @@ epel = 6
 what = 'SRPMS'
 printurl = False
 printsrpm = False
+matchsrpm = False
 
-ops,pkg_names = getopt.getopt(sys.argv[1:], 'ubs567')
+ops,pkg_names = getopt.getopt(sys.argv[1:], 'ubsS567')
 for op,val in ops:
     if   op == '-u': printurl = True
     elif op == '-b': what = 'x86_64'
     elif op == '-s': printsrpm = True
+    elif op == '-S': matchsrpm = True
     else           : epel = int(op[1:])
 
 baseurl = 'http://dl.fedoraproject.org/pub/epel/%d/%s' % (epel, what)
@@ -99,16 +102,18 @@ def do_cache_setup():
         os.utime(cachets, None)
 
 def getsql():
+    match = 'spkg' if matchsrpm else 'name'
+
     def like(name):
-        return "%s ?" % ("like" if "%" in name else "=")
+        return match + " %s ?" % ("like" if "%" in name else "=")
 
     if '%' in ''.join(pkg_names) or len(pkg_names) == 1:
-        nameclause = ' or name '.join(map(like,pkg_names))
+        nameclause = ' or '.join(map(like,pkg_names))
     else:
-        nameclause = "in (" + ','.join('?' for x in pkg_names) + ")"
+        nameclause = match + " in (" + ','.join('?' for x in pkg_names) + ")"
 
-    select  = "select location_href, vrstrip(rpm_sourcerpm) from packages"
-    where   = "where name " + nameclause
+    select  = "select location_href, vrstrip(rpm_sourcerpm) spkg from packages"
+    where   = "where " + nameclause
     if printsrpm:
         orderby = "order by rpm_sourcerpm, name, version, release, arch"
     else:
