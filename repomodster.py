@@ -130,7 +130,7 @@ def getsql():
         nameclause = match + " in (" + ','.join('?' for x in pkg_names) + ")"
 
     select  = "select location_href, vrstrip(rpm_sourcerpm) spkg from packages"
-    where   = "where " + nameclause
+    where   = "where (%s) and arch not in ('i386','i686')" % nameclause 
     if printspkg:
         orderby = "order by rpm_sourcerpm, name, version, release, arch"
     else:
