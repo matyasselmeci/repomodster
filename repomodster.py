@@ -29,7 +29,7 @@ def usage(status=0):
     print "  -b   match binary packages (default=%s)" % what
     print "  -s   print source package name too"
     print "  -S   match source package names for binary package list"
-    print "  -5,-6,-7   specify EPEL release series (default=%d)" % epel
+    print "  -5,-6,-7   specify EL release series (default=%d)" % epel
     sys.exit(status)
 
 epel = 6
@@ -45,6 +45,13 @@ for op,val in ops:
     elif op == '-s': printspkg = True
     elif op == '-S': matchspkg = True
     else           : epel = int(op[1:])
+
+# fer later...
+osg_series  = '3.2'
+osg_repo    = 'release'
+osg_what    = 'source/SRPMS'
+osg_baseurl = 'http://repo.grid.iu.edu/osg/%s/el%d/%s/%s' % (
+                osg_series, epel, osg_repo, osg_what)
 
 baseurl = 'http://dl.fedoraproject.org/pub/epel/%d/%s' % (epel, what)
 repomd  = baseurl + '/repodata/repomd.xml'
@@ -160,7 +167,7 @@ def main():
     c.execute(sql, pkg_names)
 
     for href,spkg in c:
-        if printspkg and what != 'SRPMS':
+        if printspkg and what == 'x86_64':
             print "[%s]" % spkg,
         if printurl:
             print baseurl + "/" + href
