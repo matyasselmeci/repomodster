@@ -21,12 +21,15 @@ except ImportError:  # if sys.version_info[0:2] == (2,4):
 def usage(status=0):
     script = os.path.basename(__file__)
     print "usage: %s [-ubsS567] PACKAGE [...]" % script
-    print "specify -u to print full download urls"
-    print "specify -b to match binary packages (default=%s)" % what
-    print "specify -s to print source package name too"
-    print "specify -S to match source package names for binary package list"
-    print "specify -5,-6,-7 for EL release series (default=%d)" % epel
+    print
     print "each PACKAGE can be a full package name or contain '%' wildcards"
+    print
+    print "Options:"
+    print "  -u   print full download urls"
+    print "  -b   match binary packages (default=%s)" % what
+    print "  -s   print source package name too"
+    print "  -S   match source package names for binary package list"
+    print "  -5,-6,-7   specify EPEL release series (default=%d)" % epel
     sys.exit(status)
 
 epel = 6
