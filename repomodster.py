@@ -32,15 +32,15 @@ def usage(status=0):
 epel = 6
 what = 'SRPMS'
 printurl = False
-printsrpm = False
-matchsrpm = False
+printspkg = False
+matchspkg = False
 
 ops,pkg_names = getopt.getopt(sys.argv[1:], 'ubsS567')
 for op,val in ops:
     if   op == '-u': printurl = True
     elif op == '-b': what = 'x86_64'
-    elif op == '-s': printsrpm = True
-    elif op == '-S': matchsrpm = True
+    elif op == '-s': printspkg = True
+    elif op == '-S': matchspkg = True
     else           : epel = int(op[1:])
 
 baseurl = 'http://dl.fedoraproject.org/pub/epel/%d/%s' % (epel, what)
@@ -102,7 +102,7 @@ def do_cache_setup():
         os.utime(cachets, None)
 
 def getsql():
-    match = 'spkg' if matchsrpm else 'name'
+    match = 'spkg' if matchspkg else 'name'
 
     def like(name):
         return match + " %s ?" % ("like" if "%" in name else "=")
@@ -114,7 +114,7 @@ def getsql():
 
     select  = "select location_href, vrstrip(rpm_sourcerpm) spkg from packages"
     where   = "where " + nameclause
-    if printsrpm:
+    if printspkg:
         orderby = "order by rpm_sourcerpm, name, version, release, arch"
     else:
         orderby = "order by name, version, release, arch"
@@ -146,10 +146,10 @@ def main():
     sql = getsql()
     c.execute(sql, pkg_names)
 
-    for href,srpm in c:
-        if printsrpm and what != 'SRPMS':
-            #srpm = srpm.rsplit('-',2)[0]
-            print "[" + srpm + "]",
+    for href,spkg in c:
+        if printspkg and what != 'SRPMS':
+            #spkg = spkg.rsplit('-',2)[0]
+            print "[" + spkg + "]",
         if printurl:
             print baseurl + "/" + href
         else:
