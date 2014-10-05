@@ -110,10 +110,10 @@ def update_cache():
         msg("fetching latest primary db...")
         primary_zip = urllib2.urlopen(primary_url).read()
         msg("decompressing...")
-        primary_dat = bz2.decompress(primary_zip)
+        primary_db = bz2.decompress(primary_zip)
         msg("saving cache...")
-        open(cachedb, "w").write(primary_dat)
-        print >> open(cachets, "w"), primary_ts
+        open(cachedb, "w").write(primary_db)
+        print >>open(cachets, "w"), primary_ts
         msg()
     else:
         # touch ts file to mark as recent
