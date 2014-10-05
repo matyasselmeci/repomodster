@@ -105,7 +105,6 @@ def update_cache():
         last_ts = float(open(cachets).readline().strip())
     else:
         last_ts = 0
-        print >> open(cachets, "w"), primary_ts
 
     if primary_ts > last_ts:
         msg("fetching latest primary db...")
@@ -114,6 +113,7 @@ def update_cache():
         primary_dat = bz2.decompress(primary_zip)
         msg("saving cache...")
         open(cachedb, "w").write(primary_dat)
+        print >> open(cachets, "w"), primary_ts
         msg()
     else:
         # touch ts file to mark as recent
