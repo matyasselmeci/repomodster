@@ -20,7 +20,7 @@ except ImportError:  # if sys.version_info[0:2] == (2,4):
 
 def usage(status=0):
     script = os.path.basename(__file__)
-    print "usage: %s [-ubsSc567] PACKAGE [...]" % script
+    print "usage: %s [-ubsScd567] PACKAGE [...]" % script
     print
     print "each PACKAGE can be a full package name or contain '%' wildcards"
     print
@@ -30,6 +30,7 @@ def usage(status=0):
     print "  -s   print source package name too"
     print "  -S   match source package names for binary package list"
     print "  -c   always use cached primary db (don't attempt to update)"
+    print "  -d   download matching rpm(s)"
     print "  -5,-6,-7   specify EL release series (default=%d)" % epel
     sys.exit(status)
 
@@ -39,14 +40,16 @@ printurl = False
 printspkg = False
 matchspkg = False
 autoupdate = True
+downloadrpms = False
 
-ops,pkg_names = getopt.getopt(sys.argv[1:], 'ubsSc567')
+ops,pkg_names = getopt.getopt(sys.argv[1:], 'ubsScd567')
 for op,val in ops:
     if   op == '-u': printurl = True
     elif op == '-b': what = 'x86_64'
     elif op == '-s': printspkg = True
     elif op == '-S': matchspkg = True
     elif op == '-c': autoupdate = False
+    elif op == '-d': downloadrpms = True
     else           : epel = int(op[1:])
 
 # fer later...
@@ -133,6 +136,13 @@ def do_cache_setup():
             if not cache_exists():
                 fail("primary db cache does not exist and download failed...")
 
+def download(url):
+    dest = url.split('/')[-1]
+    handle = urllib2.urlopen(url)
+    msg("downloading %s..." % dest)
+    open(dest, "w").write(handle.read())
+    msg()
+
 def getsql():
     match = 'spkg' if matchspkg else 'name'
 
@@ -181,6 +191,8 @@ def main():
             print baseurl + "/" + href
         else:
             print href.split('/')[-1]
+        if downloadrpms:
+            download(baseurl + "/" + href)
 
 if __name__ == '__main__':
     main()
