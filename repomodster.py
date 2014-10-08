@@ -31,10 +31,11 @@ def usage(status=0):
     print "  -S   match source package names for binary package list"
     print "  -c   always use cached primary db (don't attempt to update)"
     print "  -d   download matching rpm(s)"
-    print "  -5,-6,-7   specify EL release series (default=%d)" % epel
+    print "  -5,-6,-7   specify EL release series (default=%d)" % default_epel
     sys.exit(status)
 
-epel = 6
+default_epel = 6
+epels = []
 what = 'SRPMS'
 printurl = False
 printspkg = False
@@ -50,21 +51,35 @@ for op,val in ops:
     elif op == '-S': matchspkg = True
     elif op == '-c': autoupdate = False
     elif op == '-d': downloadrpms = True
-    else           : epel = int(op[1:])
+    else           : epels += [int(op[1:])]
 
-# fer later...
-osg_series  = '3.2'
-osg_repo    = 'release'
-osg_what    = 'source/SRPMS'
-osg_baseurl = 'http://repo.grid.iu.edu/osg/%s/el%d/%s/%s' % (
-                osg_series, epel, osg_repo, osg_what)
+if len(epels) == 0:
+    epels += [default_epel]
 
-baseurl = 'http://dl.fedoraproject.org/pub/epel/%d/%s' % (epel, what)
-repomd  = baseurl + '/repodata/repomd.xml'
+class Container:
+    pass
 
-cachedir  = os.getenv('HOME') + "/.cache/epeldb"
-cachets   = cachedir + "/primary.epel%d.%s.ts" % (epel, what)
-cachedb   = cachedir + "/primary.epel%d.%s.db" % (epel, what)
+def get_epel_info(epel, what):
+    # fer later...
+    info = Container()
+
+    info.series  = '3.2'
+    info.repo    = 'release'
+    info.what    = 'source/SRPMS'
+    info.baseurl = 'http://repo.grid.iu.edu/osg/%s/el%d/%s/%s' % (
+                     info.series, epel, info.repo, info.what)
+    return info
+
+def get_epel_info(epel, what):
+    info = Container()
+
+    info.baseurl = 'http://dl.fedoraproject.org/pub/epel/%d/%s' % (epel, what)
+    info.repomd  = info.baseurl + '/repodata/repomd.xml'
+
+    info.cachedir  = os.getenv('HOME') + "/.cache/epeldb"
+    info.cachets   = info.cachedir + "/primary.epel%d.%s.ts" % (epel, what)
+    info.cachedb   = info.cachedir + "/primary.epel%d.%s.db" % (epel, what)
+    return info
 
 def msg(m=""):
     if sys.stderr.isatty():
@@ -74,8 +89,8 @@ def fail(m="",status=1):
     print >>sys.stderr, m
     sys.exit(status)
 
-def get_repomd_xml():
-    handle = urllib2.urlopen(repomd)
+def get_repomd_xml(info):
+    handle = urllib2.urlopen(info.repomd)
     xml = handle.read()
     # strip xmlns garbage to simplify extracting things...
     xml = re.sub(r'<repomd [^>]*>', '<repomd>', xml)
@@ -85,27 +100,28 @@ def get_repomd_xml():
 def is_pdb(x):
     return x.get('type') == 'primary_db'
 
-def cache_exists():
-    return os.path.exists(cachets) and os.path.exists(cachedb)
+def cache_exists(info):
+    return os.path.exists(info.cachets) and os.path.exists(info.cachedb)
 
-def cache_is_recent():
+def cache_is_recent(info):
     # if the cache is < 1h old, don't bother to see if there's a newer one
-    return cache_exists() and os.stat(cachets).st_mtime + 3600 > time.time()
+    return cache_exists(info) and \
+           os.stat(info.cachets).st_mtime + 3600 > time.time()
 
-def update_cache():
+def update_cache(info):
     msg("fetching latest repomd.xml...")
-    tree = get_repomd_xml()
+    tree = get_repomd_xml(info)
     msg()
     datas = tree.findall('data')
     primary = filter(is_pdb, datas)[0]
     primary_href = primary.find('location').get('href')
-    primary_url = baseurl + '/' + primary_href
+    primary_url = info.baseurl + '/' + primary_href
     primary_ts = float(primary.find('timestamp').text)  # hey let's use this...
 
-    if not os.path.exists(cachedir):
-        os.makedirs(cachedir)
-    if cache_exists():
-        last_ts = float(open(cachets).readline().strip())
+    if not os.path.exists(info.cachedir):
+        os.makedirs(info.cachedir)
+    if cache_exists(info):
+        last_ts = float(open(info.cachets).readline().strip())
     else:
         last_ts = 0
 
@@ -115,25 +131,25 @@ def update_cache():
         msg("decompressing...")
         primary_db = bz2.decompress(primary_zip)
         msg("saving cache...")
-        open(cachedb, "w").write(primary_db)
-        print >>open(cachets, "w"), primary_ts
+        open(info.cachedb, "w").write(primary_db)
+        print >>open(info.cachets, "w"), primary_ts
         msg()
     else:
         # touch ts file to mark as recent
-        os.utime(cachets, None)
+        os.utime(info.cachets, None)
 
-def do_cache_setup():
+def do_cache_setup(info):
     if not autoupdate:
-        if cache_exists():
+        if cache_exists(info):
             return
         else:
             fail("cache requested but does not exist...")
-    if not cache_is_recent():
+    if not cache_is_recent(info):
         try:
-            update_cache()
+            update_cache(info)
         except urllib2.URLError:
             msg()
-            if not cache_exists():
+            if not cache_exists(info):
                 fail("primary db cache does not exist and download failed...")
 
 def download(url):
@@ -174,9 +190,13 @@ def main():
     if not pkg_names:
         usage()
 
-    do_cache_setup()
+    for info in ( get_epel_info(epel, what) for epel in epels ):
+        run_for_repo(info)
 
-    db = sqlite3.connect(cachedb)
+def run_for_repo(info):
+    do_cache_setup(info)
+
+    db = sqlite3.connect(info.cachedb)
     # db.create_function("regexp", 2, regexp)
     db.create_function("vrstrip", 1, vrstrip)
     c  = db.cursor()
@@ -188,11 +208,11 @@ def main():
         if printspkg and what == 'x86_64':
             print "[%s]" % spkg,
         if printurl:
-            print baseurl + "/" + href
+            print info.baseurl + "/" + href
         else:
             print href.split('/')[-1]
         if downloadrpms:
-            download(baseurl + "/" + href)
+            download(info.baseurl + "/" + href)
 
 if __name__ == '__main__':
     main()
