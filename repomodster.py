@@ -43,7 +43,11 @@ matchspkg = False
 autoupdate = True
 downloadrpms = False
 
-ops,pkg_names = getopt.getopt(sys.argv[1:], 'ubsScd567')
+try:
+    ops,pkg_names = getopt.getopt(sys.argv[1:], 'ubsScd567')
+except getopt.GetoptError:
+    usage()
+
 for op,val in ops:
     if   op == '-u': printurl = True
     elif op == '-b': what = 'x86_64'
