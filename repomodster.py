@@ -78,7 +78,9 @@ def get_epel_info(epel, what):
 def get_epel_info(epel, what):
     info = Container()
 
-    info.baseurl = 'http://dl.fedoraproject.org/pub/epel/%d/%s' % (epel, what)
+    # mirror!
+    info.baseurl = 'http://ftp.osuosl.org/pub/fedora-epel/%d/%s' % (epel, what)
+    #info.baseurl = 'http://dl.fedoraproject.org/pub/epel/%d/%s' % (epel, what)
     info.repomd  = info.baseurl + '/repodata/repomd.xml'
 
     info.cachedir  = os.getenv('HOME') + "/.cache/epeldb"
