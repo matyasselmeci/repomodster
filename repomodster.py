@@ -42,6 +42,7 @@ printspkg = False
 matchspkg = False
 autoupdate = True
 downloadrpms = False
+stale_cache_age = 3600   # seconds
 
 try:
     ops,pkg_names = getopt.getopt(sys.argv[1:], 'ubsScd567')
@@ -110,7 +111,7 @@ def cache_exists(info):
 def cache_is_recent(info):
     # if the cache is < 1h old, don't bother to see if there's a newer one
     return cache_exists(info) and \
-           os.stat(info.cachets).st_mtime + 3600 > time.time()
+           os.stat(info.cachets).st_mtime + stale_cache_age > time.time()
 
 def update_cache(info):
     msg("fetching latest repomd.xml...")
