@@ -93,18 +93,18 @@ def get_centos_info(el, what):
     info.cachedb   = info.cachedir + "/primary.centos%d.%s.db" % (el, what)
     return info
 
-def get_epel_info(epel, what):
+def get_epel_info(el, what):
     info = Container()
 
     # mirror!
-    info.baseurl = 'http://mirror.batlab.org/pub/linux/epel/%d/%s' % (epel, what)
-    #info.baseurl = 'http://ftp.osuosl.org/pub/fedora-epel/%d/%s' % (epel, what)
-    #info.baseurl = 'http://dl.fedoraproject.org/pub/epel/%d/%s' % (epel, what)
+    info.baseurl = 'http://mirror.batlab.org/pub/linux/epel/%d/%s' % (el, what)
+    #info.baseurl = 'http://ftp.osuosl.org/pub/fedora-epel/%d/%s' % (el, what)
+    #info.baseurl = 'http://dl.fedoraproject.org/pub/epel/%d/%s' % (el, what)
     info.repomd  = info.baseurl + '/repodata/repomd.xml'
 
     info.cachedir  = os.getenv('HOME') + "/.cache/epeldb"
-    info.cachets   = info.cachedir + "/primary.epel%d.%s.ts" % (epel, what)
-    info.cachedb   = info.cachedir + "/primary.epel%d.%s.db" % (epel, what)
+    info.cachets   = info.cachedir + "/primary.epel%d.%s.ts" % (el, what)
+    info.cachedb   = info.cachedir + "/primary.epel%d.%s.db" % (el, what)
     return info
 
 def msg(m=""):
