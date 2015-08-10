@@ -79,7 +79,8 @@ def get_epel_info(epel, what):
     info = Container()
 
     # mirror!
-    info.baseurl = 'http://ftp.osuosl.org/pub/fedora-epel/%d/%s' % (epel, what)
+    info.baseurl = 'http://mirror.batlab.org/pub/linux/epel/%d/%s' % (epel, what)
+    #info.baseurl = 'http://ftp.osuosl.org/pub/fedora-epel/%d/%s' % (epel, what)
     #info.baseurl = 'http://dl.fedoraproject.org/pub/epel/%d/%s' % (epel, what)
     info.repomd  = info.baseurl + '/repodata/repomd.xml'
 
