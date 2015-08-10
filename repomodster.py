@@ -127,6 +127,10 @@ def cache_is_recent(info):
     return cache_exists(info) and \
            os.stat(info.cachets).st_mtime + stale_cache_age > time.time()
 
+def xz_decompress(dat):
+    from subprocess import Popen, PIPE
+    return Popen(['xz','-d'], stdin=PIPE, stdout=PIPE).communicate(dat)[0]
+
 def update_cache(info):
     msg("fetching latest repomd.xml...")
     tree = get_repomd_xml(info)
@@ -148,7 +152,10 @@ def update_cache(info):
         msg("fetching latest primary db...")
         primary_zip = urllib2.urlopen(primary_url).read()
         msg("decompressing...")
-        primary_db = bz2.decompress(primary_zip)
+        if primary_url.endswith('.xz'):
+            primary_db = xz_decompress(primary_zip)
+        else:
+            primary_db = bz2.decompress(primary_zip)
         msg("saving cache...")
         open(info.cachedb, "w").write(primary_db)
         print >>open(info.cachets, "w"), primary_ts
