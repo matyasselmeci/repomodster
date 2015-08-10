@@ -19,8 +19,7 @@ except ImportError:  # if sys.version_info[0:2] == (2,4):
     import elementtree.ElementTree as et
 
 def usage(status=0):
-    script = os.path.basename(__file__)
-    print "usage: %s [-ubsScdOC567] [-o ser] [-r repo] PACKAGE [...]" % script
+    print "usage: %s [-ubsScdOCE567] [-o ser] [-r repo] PACKAGE [...]" % script
     print
     print "each PACKAGE can be a full package name or contain '%' wildcards"
     print
@@ -33,12 +32,18 @@ def usage(status=0):
     print "  -d   download matching rpm(s)"
     print "  -O   use OSG repos (use with -o/-r)"
     print "  -C   use Centos repos"
+    print "  -E   use EPEL repos"
     print "  -5,-6,-7   specify EL release series (default=%d)" % default_epel
     print
     print "  -o series  use osg series (3.2, 3.3, upcoming)"
     print "  -r repo    use osg repo (development, testing, release)"
     sys.exit(status)
 
+def get_default_reposet():
+    m = re.search(r'^(osg|epel|centos)-srpms$', script)
+    return m.group(1) if m else 'epel'
+
+script = os.path.basename(__file__)
 default_epel = 6
 epels = []
 what = 'SRPMS'
@@ -48,12 +53,12 @@ matchspkg = False
 autoupdate = True
 downloadrpms = False
 stale_cache_age = 3600   # seconds
-reposet = 'epel'
+reposet = get_default_reposet()
 osgser = '3.2'
 osgrepo = 'release'
 
 try:
-    ops,pkg_names = getopt.getopt(sys.argv[1:], 'ubsScdOC567r:o:')
+    ops,pkg_names = getopt.getopt(sys.argv[1:], 'ubsScdOCE567r:o:')
 except getopt.GetoptError:
     usage()
 
@@ -66,6 +71,7 @@ for op,val in ops:
     elif op == '-d': downloadrpms = True
     elif op == '-O': reposet = 'osg'
     elif op == '-C': reposet = 'centos'
+    elif op == '-E': reposet = 'epel'
     elif op == '-r': osgrepo = val
     elif op == '-o': osgser = val
     else           : epels += [int(op[1:])]
