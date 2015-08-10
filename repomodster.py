@@ -20,7 +20,7 @@ except ImportError:  # if sys.version_info[0:2] == (2,4):
 
 def usage(status=0):
     script = os.path.basename(__file__)
-    print "usage: %s [-ubsScd567] PACKAGE [...]" % script
+    print "usage: %s [-ubsScdOC567] [-o ser] [-r repo] PACKAGE [...]" % script
     print
     print "each PACKAGE can be a full package name or contain '%' wildcards"
     print
@@ -31,7 +31,12 @@ def usage(status=0):
     print "  -S   match source package names for binary package list"
     print "  -c   always use cached primary db (don't attempt to update)"
     print "  -d   download matching rpm(s)"
+    print "  -O   use OSG repos (use with -o/-r)"
+    print "  -C   use Centos repos"
     print "  -5,-6,-7   specify EL release series (default=%d)" % default_epel
+    print
+    print "  -o series  use osg series (3.2, 3.3, upcoming)"
+    print "  -r repo    use osg repo (development, testing, release)"
     sys.exit(status)
 
 default_epel = 6
@@ -43,9 +48,12 @@ matchspkg = False
 autoupdate = True
 downloadrpms = False
 stale_cache_age = 3600   # seconds
+reposet = 'epel'
+osgser = '3.2'
+osgrepo = 'release'
 
 try:
-    ops,pkg_names = getopt.getopt(sys.argv[1:], 'ubsScd567')
+    ops,pkg_names = getopt.getopt(sys.argv[1:], 'ubsScdOC567r:o:')
 except getopt.GetoptError:
     usage()
 
@@ -56,6 +64,10 @@ for op,val in ops:
     elif op == '-S': matchspkg = True
     elif op == '-c': autoupdate = False
     elif op == '-d': downloadrpms = True
+    elif op == '-O': reposet = 'osg'
+    elif op == '-C': reposet = 'centos'
+    elif op == '-r': osgrepo = val
+    elif op == '-o': osgser = val
     else           : epels += [int(op[1:])]
 
 if len(epels) == 0:
@@ -65,18 +77,15 @@ class Container:
     pass
 
 def get_osg_info(el, what):
-    # fer later...
     info = Container()
 
-    info.series  = '3.2'
-    info.repo    = 'release'
-    info.what = 'source/SRPMS' if what == 'SRPMS' else what
+    info.what    = 'source/SRPMS' if what == 'SRPMS' else what
     info.baseurl = 'http://repo.grid.iu.edu/osg/%s/el%d/%s/%s' % (
-                     info.series, el, info.repo, info.what)
+                     osgser, el, osgrepo, info.what)
 
     info.repomd  = info.baseurl + '/repodata/repomd.xml'
 
-    cachename      = "osg-%s-el%d.%s" % (info.series, el, what)
+    cachename      = "osg-%s-el%d.%s" % (osgser, el, what)
     info.cachedir  = os.getenv('HOME') + "/.cache/epeldb"
     info.cachets   = info.cachedir + "/primary.%s.ts" % cachename
     info.cachedb   = info.cachedir + "/primary.%s.db" % cachename
@@ -106,6 +115,17 @@ def get_epel_info(el, what):
     info.cachets   = info.cachedir + "/primary.epel%d.%s.ts" % (el, what)
     info.cachedb   = info.cachedir + "/primary.epel%d.%s.db" % (el, what)
     return info
+
+def get_reposet_info(el, what):
+    if reposet == 'epel':
+        getinfo = get_epel_info
+    elif reposet == 'osg':
+        getinfo = get_osg_info
+    elif reposet == 'centos':
+        getinfo = get_centos_info
+    else:
+        fail("herp derp, what's %s?" % reposet)
+    return getinfo(el, what)
 
 def msg(m=""):
     if sys.stderr.isatty():
@@ -223,7 +243,7 @@ def main():
     if not pkg_names:
         usage()
 
-    for info in ( get_epel_info(epel, what) for epel in epels ):
+    for info in ( get_reposet_info(epel, what) for epel in epels ):
         run_for_repo(info)
 
 def run_for_repo(info):
