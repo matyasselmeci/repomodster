@@ -64,7 +64,7 @@ if len(epels) == 0:
 class Container:
     pass
 
-def get_epel_info(epel, what):
+def get_osg_info(el, what):
     # fer later...
     info = Container()
 
@@ -72,7 +72,18 @@ def get_epel_info(epel, what):
     info.repo    = 'release'
     info.what    = 'source/SRPMS'
     info.baseurl = 'http://repo.grid.iu.edu/osg/%s/el%d/%s/%s' % (
-                     info.series, epel, info.repo, info.what)
+                     info.series, el, info.repo, info.what)
+    return info
+
+def get_centos_info(el, what):
+    info = Container()
+
+    info.baseurl = 'http://vault.centos.org/%d.0/os/%s' % (el, what)
+    info.repomd  = info.baseurl + '/repodata/repomd.xml'
+
+    info.cachedir  = os.getenv('HOME') + "/.cache/epeldb"
+    info.cachets   = info.cachedir + "/primary.centos%d.%s.ts" % (el, what)
+    info.cachedb   = info.cachedir + "/primary.centos%d.%s.db" % (el, what)
     return info
 
 def get_epel_info(epel, what):
