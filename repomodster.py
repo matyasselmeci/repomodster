@@ -70,9 +70,16 @@ def get_osg_info(el, what):
 
     info.series  = '3.2'
     info.repo    = 'release'
-    info.what    = 'source/SRPMS'
+    info.what = 'source/SRPMS' if what == 'SRPMS' else what
     info.baseurl = 'http://repo.grid.iu.edu/osg/%s/el%d/%s/%s' % (
                      info.series, el, info.repo, info.what)
+
+    info.repomd  = info.baseurl + '/repodata/repomd.xml'
+
+    cachename      = "osg-%s-el%d.%s" % (info.series, el, what)
+    info.cachedir  = os.getenv('HOME') + "/.cache/epeldb"
+    info.cachets   = info.cachedir + "/primary.%s.ts" % cachename
+    info.cachedb   = info.cachedir + "/primary.%s.db" % cachename
     return info
 
 def get_centos_info(el, what):
