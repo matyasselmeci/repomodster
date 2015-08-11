@@ -123,15 +123,7 @@ def get_epel_info(el, what):
     return info
 
 def get_reposet_info(el, what):
-    if reposet == 'epel':
-        getinfo = get_epel_info
-    elif reposet == 'osg':
-        getinfo = get_osg_info
-    elif reposet == 'centos':
-        getinfo = get_centos_info
-    else:
-        fail("herp derp, what's %s?" % reposet)
-    return getinfo(el, what)
+    return sys.modules[__name__].__dict__["get_%s_info" % reposet](el, what)
 
 def msg(m=""):
     if sys.stderr.isatty():
