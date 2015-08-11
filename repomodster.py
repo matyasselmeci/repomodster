@@ -189,6 +189,12 @@ def xyz_decompress(dat, method):
     from subprocess import Popen, PIPE
     return Popen([method, '-d'], stdin=PIPE, stdout=PIPE).communicate(dat)[0]
 
+def datafilter(cmdline):
+    if cmdline is None:
+        return (lambda x:x)
+    from subprocess import Popen, PIPE
+    return (lambda x:Popen(cmdline, stdin=PIPE, stdout=PIPE).communicate(x)[0])
+
 def get_lmd(url):
     req = urllib2.Request(url)
     req.get_method = lambda : 'HEAD'
@@ -230,6 +236,14 @@ def update_cache(info):
         msg("fetching latest primary db...")
         primary_zip = slurp_url(primary_url)
         msg("decompressing...")
+
+#       ext = re.sub(r'^.*\.', '', primary_url)
+#       primary_db = { 'xz'     : datafilter(['xz','-d'])
+#                    , 'gz'     : datafilter(['gzip','-d'])
+#                    , 'bz2'    : bz2.decompress
+#                    , 'sqlite' : datafilter(None)
+#                    }[ext](primary_zip)
+
         if primary_url.endswith('.xz'):
             primary_db = xyz_decompress(primary_zip, 'xz')
         elif primary_url.endswith('.gz'):
