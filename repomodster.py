@@ -259,15 +259,15 @@ def nvr2evr(nvr):
         return (None, None, None)
 
 def rpmvercmp(a,b):
-  return rpm.labelCompare(*[nvr2evr(x) for x in (a,b)])
+    return rpm.labelCompare(*[nvr2evr(x) for x in (a,b)])
 
 def _maxrpmver(a,b):
-  return a if rpmvercmp(a,b) > 0 else b
+    return a if rpmvercmp(a,b) > 0 else b
 
 def maxrpmver(*seq):
-  if len(seq) == 1 and hasattr(seq[0],"__iter__"):
-    seq = seq[0]
-  return reduce(_maxrpmver, seq, None)
+    if len(seq) == 1 and hasattr(seq[0],"__iter__"):
+        seq = seq[0]
+    return reduce(_maxrpmver, seq, None)
 
 def main():
     if not pkg_names:
