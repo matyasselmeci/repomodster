@@ -6,6 +6,7 @@
 
 import os
 import re
+import rpm
 import sys
 import bz2
 import time
@@ -19,7 +20,8 @@ except ImportError:  # if sys.version_info[0:2] == (2,4):
     import elementtree.ElementTree as et
 
 def usage(status=0):
-    print "usage: %s [-ubsScdOCE567] [-o ser] [-r repo] PACKAGE [...]" % script
+    print "usage: %s [-ubsScmdOCE567] [-o series] [-r repo] PACKAGE [...]" \
+          % script
     print
     print "each PACKAGE can be a full package name or contain '%' wildcards"
     print
@@ -29,6 +31,7 @@ def usage(status=0):
     print "  -s   print source package name too"
     print "  -S   match source package names for binary package list"
     print "  -c   always use cached primary db (don't attempt to update)"
+    print "  -m   only list 1 rpm (max NVR) per package name, per repo"
     print "  -d   download matching rpm(s)"
     print "  -O   use OSG repos (use with -o/-r)"
     print "  -C   use Centos repos"
@@ -54,13 +57,14 @@ printspkg = False
 matchspkg = False
 autoupdate = True
 downloadrpms = False
+maxnvr = False
 stale_cache_age = 3600   # seconds
 reposet = get_default_reposet()
 osgser = '3.2'
 osgrepo = 'release'
 
 try:
-    ops,pkg_names = getopt.getopt(sys.argv[1:], 'ubsScdOCE567r:o:')
+    ops,pkg_names = getopt.getopt(sys.argv[1:], 'ubsScmdOCE567r:o:')
 except getopt.GetoptError:
     usage()
 
@@ -70,6 +74,7 @@ for op,val in ops:
     elif op == '-s': printspkg = True
     elif op == '-S': matchspkg = True
     elif op == '-c': autoupdate = False
+    elif op == '-m': maxnvr = True
     elif op == '-d': downloadrpms = True
     elif op == '-O': reposet = 'osg'
     elif op == '-C': reposet = 'centos'
@@ -247,12 +252,44 @@ def vrstrip(s):
     if s is not None:
         return s.rsplit('-',2)[0]
 
+def nvr2evr(nvr):
+    if nvr:
+        return ['0'] + nvr.rsplit('-',2)[1:]
+    else:
+        return (None, None, None)
+
+def rpmvercmp(a,b):
+  return rpm.labelCompare(*[nvr2evr(x) for x in (a,b)])
+
+def _maxrpmver(a,b):
+  return a if rpmvercmp(a,b) > 0 else b
+
+def maxrpmver(*seq):
+  if len(seq) == 1 and hasattr(seq[0],"__iter__"):
+    seq = seq[0]
+  return reduce(_maxrpmver, seq, None)
+
 def main():
     if not pkg_names:
         usage()
 
     for info in ( get_reposet_info(epel, what) for epel in epels ):
         run_for_repo(info)
+
+def maxnvr_stunt(c):
+    nnn = []
+    nd  = {}
+    for href,spkg in c:
+        nvr = href.split('/')[-1]
+        n = vrstrip(nvr)
+        if n not in nd:
+            nd[n] = {}
+            nnn.append(n)
+        nd[n][nvr] = [href, spkg]
+
+    for n in nnn:
+        nvr = maxrpmver(nd[n].keys())
+        yield nd[n][nvr]
 
 def run_for_repo(info):
     do_cache_setup(info)
@@ -265,7 +302,7 @@ def run_for_repo(info):
     sql = getsql()
     c.execute(sql, pkg_names)
 
-    for href,spkg in c:
+    for href,spkg in (maxnvr_stunt(c) if maxnvr else c):
         if printspkg and what == 'x86_64':
             print "[%s]" % spkg,
         if printurl:
