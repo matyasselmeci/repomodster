@@ -37,6 +37,7 @@ def usage(status=0):
     print
     print "  -o series  use osg series (3.2, 3.3, upcoming)"
     print "  -r repo    use osg repo (development, testing, release)"
+    print
     sys.exit(status)
 
 def get_default_reposet():
