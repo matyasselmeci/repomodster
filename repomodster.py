@@ -236,8 +236,9 @@ def getsql():
     else:
         nameclause = match + " in (" + ','.join('?' for x in pkg_names) + ")"
 
-    select  = "select location_href, vrstrip(rpm_sourcerpm) spkg from packages"
-    where   = "where (%s) and arch not in ('i386','i686')" % nameclause 
+    select = ("select location_href, vrstrip(rpm_sourcerpm) spkg,"
+                    " name, epoch, version, release from packages")
+    where  = "where (%s) and arch not in ('i386','i686')" % nameclause 
     if printspkg:
         orderby = "order by rpm_sourcerpm, name, version, release, arch"
     else:
@@ -252,14 +253,8 @@ def vrstrip(s):
     if s is not None:
         return s.rsplit('-',2)[0]
 
-def nvr2evr(nvr):
-    if nvr:
-        return ['0'] + nvr.rsplit('-',2)[1:]
-    else:
-        return (None, None, None)
-
 def rpmvercmp(a,b):
-    return rpm.labelCompare(*[nvr2evr(x) for x in (a,b)])
+    return rpm.labelCompare(a,b)
 
 def _maxrpmver(a,b):
     return a if rpmvercmp(a,b) > 0 else b
@@ -267,7 +262,7 @@ def _maxrpmver(a,b):
 def maxrpmver(*seq):
     if len(seq) == 1 and hasattr(seq[0],"__iter__"):
         seq = seq[0]
-    return reduce(_maxrpmver, seq, None)
+    return reduce(_maxrpmver, seq, (None,None,None))
 
 def main():
     if not pkg_names:
@@ -279,13 +274,11 @@ def main():
 def maxnvr_stunt(c):
     nnn = []
     nd  = {}
-    for href,spkg in c:
-        nvr = href.split('/')[-1]
-        n = vrstrip(nvr)
+    for href,spkg,n,e,v,r in c:
         if n not in nd:
             nd[n] = {}
             nnn.append(n)
-        nd[n][nvr] = [href, spkg]
+        nd[n][e,v,r] = [href, spkg, n,e,v,r]
 
     for n in nnn:
         nvr = maxrpmver(nd[n].keys())
@@ -302,7 +295,7 @@ def run_for_repo(info):
     sql = getsql()
     c.execute(sql, pkg_names)
 
-    for href,spkg in (maxnvr_stunt(c) if maxnvr else c):
+    for href,spkg,n,e,v,r in (maxnvr_stunt(c) if maxnvr else c):
         if printspkg and what == 'x86_64':
             print "[%s]" % spkg,
         if printurl:
