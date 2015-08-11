@@ -107,7 +107,14 @@ def osg_cachename_ex(el, what):
 
 
 def centos_baseurl_ex(el, what):
-    return 'http://vault.centos.org/%d.0/os/%s' % (el, what)
+    if what == 'SRPMS':
+        whatpath = 'Source'
+        basefmt = 'http://vault.centos.org/centos/%d/os/%s'
+    else:
+        # centos mirrors don't seem to have Source pkgs
+        whatpath = what
+        basefmt = 'http://mirror.batlab.org/pub/linux/centos/%d/os/%s'
+    return basefmt % (el, whatpath)
 
 def centos_cachename_ex(el, what):
     return "centos%d.%s" % (el, what)
@@ -167,15 +174,35 @@ def xyz_decompress(dat, method):
     from subprocess import Popen, PIPE
     return Popen([method, '-d'], stdin=PIPE, stdout=PIPE).communicate(dat)[0]
 
+def get_lmd(url):
+    req = urllib2.Request(url)
+    req.get_method = lambda : 'HEAD'
+    resp = urllib2.urlopen(req)
+    lmd = resp.headers.getdate('Last-Modified')
+    return time.mktime(lmd)
+
+def snoop_primary_db(info):
+    # hack to deal with unpublished primary.sqlite.gz2 for centos5
+    html = slurp_url(info.baseurl + '/repodata')
+    m = re.search(r'href="(primary.sqlite.(?:bz2|gz|xz))"', html)
+    if m:
+        return "%s/repodata/%s" % (info.baseurl, m.group(1))
+    else:
+        fail("Can't find primary_db under %s/repodata" % info.baseurl)
+
 def update_cache(info):
     msg("fetching latest repomd.xml...")
     tree = get_repomd_xml(info)
     msg()
     datas = tree.findall('data')
-    primary = filter(is_pdb, datas)[0]
-    primary_href = primary.find('location').get('href')
-    primary_url = info.baseurl + '/' + primary_href
-    primary_ts = float(primary.find('timestamp').text)  # hey let's use this...
+    try:
+        primary = filter(is_pdb, datas)[0]
+        primary_href = primary.find('location').get('href')
+        primary_url = info.baseurl + '/' + primary_href
+        primary_ts = float(primary.find('timestamp').text)
+    except IndexError:
+        primary_url = snoop_primary_db(info)
+        primary_ts = get_lmd(primary_url)
 
     if not os.path.exists(cachedir):
         os.makedirs(cachedir)
@@ -186,7 +213,7 @@ def update_cache(info):
 
     if primary_ts > last_ts:
         msg("fetching latest primary db...")
-        primary_zip = urllib2.urlopen(primary_url).read()
+        primary_zip = slurp_url(primary_url)
         msg("decompressing...")
         if primary_url.endswith('.xz'):
             primary_db = xyz_decompress(primary_zip, 'xz')
@@ -217,6 +244,9 @@ def do_cache_setup(info):
             msg()
             if not cache_exists(info):
                 fail("primary db cache does not exist and download failed...")
+
+def slurp_url(url):
+    return urllib2.urlopen(url).read()
 
 def download(url):
     dest = url.split('/')[-1]
