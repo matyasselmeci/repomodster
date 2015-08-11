@@ -280,14 +280,11 @@ def maxnvr_stunt(c):
             nnn.append(n)
         nd[n][e,v,r] = [href, spkg]
 
-    if maxnvr:
-        for n in nnn:
-            evr = maxrpmver(nd[n].keys())
+    for n in nnn:
+        evrs = ([maxrpmver(nd[n].keys())] if maxnvr
+                else sorted(nd[n], cmp=rpmvercmp))
+        for evr in evrs:
             yield nd[n][evr]
-    else:
-        for n in nnn:
-            for evr in sorted(nd[n], cmp=rpmvercmp):
-                yield nd[n][evr]
 
 def run_for_repo(info):
     do_cache_setup(info)
