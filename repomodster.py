@@ -258,7 +258,8 @@ def do_cache_setup(info):
         except urllib2.URLError:
             msg()
             if not cache_exists(info):
-                fail("primary db cache does not exist and download failed...")
+                fail("primary db cache does not exist and download failed..."
+                     "\n(baseurl = %s)" % info.baseurl)
 
 def slurp_url(url):
     return urllib2.urlopen(url).read()
