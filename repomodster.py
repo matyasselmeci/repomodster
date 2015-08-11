@@ -44,6 +44,7 @@ def get_default_reposet():
     return m.group(1) if m else 'epel'
 
 script = os.path.basename(__file__)
+cachedir  = os.getenv('HOME') + "/.cache/epeldb"
 default_epel = 6
 epels = []
 what = 'SRPMS'
@@ -82,48 +83,50 @@ if len(epels) == 0:
 class Container:
     pass
 
-def get_osg_info(el, what):
-    info = Container()
+def getfn(name):
+    return getattr(sys.modules[__name__], name)
 
-    info.what    = 'source/SRPMS' if what == 'SRPMS' else what
-    info.baseurl = 'http://repo.grid.iu.edu/osg/%s/el%d/%s/%s' % (
-                     osgser, el, osgrepo, info.what)
 
-    info.repomd  = info.baseurl + '/repodata/repomd.xml'
+# reposet infos...
 
-    cachename      = "osg-%s-el%d.%s" % (osgser, el, what)
-    info.cachedir  = os.getenv('HOME') + "/.cache/epeldb"
-    info.cachets   = info.cachedir + "/primary.%s.ts" % cachename
-    info.cachedb   = info.cachedir + "/primary.%s.db" % cachename
-    return info
+def osg_baseurl_ex(el, what):
+    whatpath = 'source/SRPMS' if what == 'SRPMS' else what
+    basefmt  = 'http://repo.grid.iu.edu/osg/%s/el%d/%s/%s'
+    return basefmt % (osgser, el, osgrepo, whatpath)
 
-def get_centos_info(el, what):
-    info = Container()
+def osg_cachename_ex(el, what):
+    return "osg-%s-el%d.%s" % (osgser, el, what)
 
-    info.baseurl = 'http://vault.centos.org/%d.0/os/%s' % (el, what)
-    info.repomd  = info.baseurl + '/repodata/repomd.xml'
 
-    info.cachedir  = os.getenv('HOME') + "/.cache/epeldb"
-    info.cachets   = info.cachedir + "/primary.centos%d.%s.ts" % (el, what)
-    info.cachedb   = info.cachedir + "/primary.centos%d.%s.db" % (el, what)
-    return info
+def centos_baseurl_ex(el, what):
+    return 'http://vault.centos.org/%d.0/os/%s' % (el, what)
 
-def get_epel_info(el, what):
-    info = Container()
+def centos_cachename_ex(el, what):
+    return "centos%d.%s" % (el, what)
 
-    # mirror!
-    info.baseurl = 'http://mirror.batlab.org/pub/linux/epel/%d/%s' % (el, what)
-    #info.baseurl = 'http://ftp.osuosl.org/pub/fedora-epel/%d/%s' % (el, what)
-    #info.baseurl = 'http://dl.fedoraproject.org/pub/epel/%d/%s' % (el, what)
-    info.repomd  = info.baseurl + '/repodata/repomd.xml'
 
-    info.cachedir  = os.getenv('HOME') + "/.cache/epeldb"
-    info.cachets   = info.cachedir + "/primary.epel%d.%s.ts" % (el, what)
-    info.cachedb   = info.cachedir + "/primary.epel%d.%s.db" % (el, what)
-    return info
+def epel_baseurl_ex(el, what):
+    basefmt = 'http://mirror.batlab.org/pub/linux/epel/%d/%s'
+    #basefmt = 'http://ftp.osuosl.org/pub/fedora-epel/%d/%s'
+    #basefmt = 'http://dl.fedoraproject.org/pub/epel/%d/%s'
+    return basefmt % (el, what)
+
+def epel_cachename_ex(el, what):
+    return "epel%d.%s" % (el, what)
+
 
 def get_reposet_info(el, what):
-    return getattr(sys.modules[__name__], "get_%s_info" % reposet)(el, what)
+    info = Container()
+    baseurl_ex    = getfn(reposet + "_baseurl_ex")
+    cachename_ex  = getfn(reposet + "_cachename_ex")
+
+    info.baseurl  = baseurl_ex(el, what)
+    info.repomd   = info.baseurl + '/repodata/repomd.xml'
+    cachename     = cachename_ex(el, what)
+    info.cachets  = cachedir + "/primary.%s.ts" % cachename
+    info.cachedb  = cachedir + "/primary.%s.db" % cachename
+    return info
+
 
 def msg(m=""):
     if sys.stderr.isatty():
@@ -166,8 +169,8 @@ def update_cache(info):
     primary_url = info.baseurl + '/' + primary_href
     primary_ts = float(primary.find('timestamp').text)  # hey let's use this...
 
-    if not os.path.exists(info.cachedir):
-        os.makedirs(info.cachedir)
+    if not os.path.exists(cachedir):
+        os.makedirs(cachedir)
     if cache_exists(info):
         last_ts = float(open(info.cachets).readline().strip())
     else:
