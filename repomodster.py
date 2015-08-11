@@ -33,7 +33,7 @@ def usage(status=0):
     print "  -c   always use cached primary db (don't attempt to update)"
     print "  -m   only list 1 rpm (max NVR) per package name, per repo"
     print "  -d   download matching rpm(s)"
-    print "  -O   use OSG repos (use with -o/-r)"
+    print "  -O   use OSG repos  (defaults: -o %s -r %s)" % (osgser, osgrepo)
     print "  -C   use Centos repos"
     print "  -E   use EPEL repos"
     print "  -5,-6,-7   specify EL release series (default=%d)" % default_epel
