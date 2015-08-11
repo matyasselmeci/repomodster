@@ -20,7 +20,7 @@ except ImportError:  # if sys.version_info[0:2] == (2,4):
     import elementtree.ElementTree as et
 
 def usage(status=0):
-    print "usage: %s [-ubsScmdOCE567] [-o series] [-r repo] PACKAGE [...]" \
+    print "usage: %s [-ubsScmdOCEJ567] [-o series] [-r repo] PACKAGE [...]" \
           % script
     print
     print "each PACKAGE can be a full package name or contain '%' wildcards"
@@ -35,6 +35,7 @@ def usage(status=0):
     print "  -d   download matching rpm(s)"
     print "  -O   use OSG repos  (defaults: -o %s -r %s)" % (osgser, osgrepo)
     print "  -C   use Centos repos"
+    print "  -J   use JPackage repos"
     print "  -E   use EPEL repos"
     print "  -5,-6,-7   specify EL release series (default=%d)" % default_epel
     print
@@ -44,7 +45,7 @@ def usage(status=0):
     sys.exit(status)
 
 def get_default_reposet():
-    m = re.search(r'^(osg|epel|centos)-srpms$', script)
+    m = re.search(r'^(osg|epel|centos|jpackage)-srpms$', script)
     return m.group(1) if m else 'epel'
 
 script = os.path.basename(__file__)
@@ -64,7 +65,7 @@ osgser = '3.2'
 osgrepo = 'release'
 
 try:
-    ops,pkg_names = getopt.getopt(sys.argv[1:], 'ubsScmdOCE567r:o:')
+    ops,pkg_names = getopt.getopt(sys.argv[1:], 'ubsScmdOCEJ567r:o:')
 except getopt.GetoptError:
     usage()
 
@@ -79,6 +80,7 @@ for op,val in ops:
     elif op == '-O': reposet = 'osg'
     elif op == '-C': reposet = 'centos'
     elif op == '-E': reposet = 'epel'
+    elif op == '-J': reposet = 'jpackage'
     elif op == '-r': osgrepo = val
     elif op == '-o': osgser = val
     else           : epels += [int(op[1:])]
@@ -118,6 +120,16 @@ def centos_baseurl_ex(el, what):
 
 def centos_cachename_ex(el, what):
     return "centos%d.%s" % (el, what)
+
+
+def jpackage_baseurl_ex(el, what):
+    whatpath = what if what == 'SRPMS' else 'RPMS'
+    basefmt = 'http://mirror.batlab.org/pub/jpackage/%d/%s'
+    return basefmt % (el, whatpath)
+
+def jpackage_cachename_ex(el, what):
+    whatpath = what if what == 'SRPMS' else 'RPMS'
+    return "jpackage%d.%s" % (el, whatpath)
 
 
 def epel_baseurl_ex(el, what):
