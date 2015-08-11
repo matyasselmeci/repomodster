@@ -20,7 +20,7 @@ except ImportError:  # if sys.version_info[0:2] == (2,4):
     import elementtree.ElementTree as et
 
 def usage(status=0):
-    print "usage: %s [-ubsScmdOCE567] [-o series] [-r repo] PACKAGE [...]" \
+    print "usage: %s [-ubsScmdOCEJ567] [-o series] [-r repo] PACKAGE [...]" \
           % script
     print
     print "each PACKAGE can be a full package name or contain '%' wildcards"
@@ -35,6 +35,7 @@ def usage(status=0):
     print "  -d   download matching rpm(s)"
     print "  -O   use OSG repos  (defaults: -o %s -r %s)" % (osgser, osgrepo)
     print "  -C   use Centos repos"
+    print "  -J   use JPackage repos"
     print "  -E   use EPEL repos"
     print "  -5,-6,-7   specify EL release series (default=%d)" % default_epel
     print
@@ -44,7 +45,7 @@ def usage(status=0):
     sys.exit(status)
 
 def get_default_reposet():
-    m = re.search(r'^(osg|epel|centos)-srpms$', script)
+    m = re.search(r'^(osg|epel|centos|jpackage)-srpms$', script)
     return m.group(1) if m else 'epel'
 
 script = os.path.basename(__file__)
@@ -64,7 +65,7 @@ osgser = '3.2'
 osgrepo = 'release'
 
 try:
-    ops,pkg_names = getopt.getopt(sys.argv[1:], 'ubsScmdOCE567r:o:')
+    ops,pkg_names = getopt.getopt(sys.argv[1:], 'ubsScmdOCEJ567r:o:')
 except getopt.GetoptError:
     usage()
 
@@ -79,6 +80,7 @@ for op,val in ops:
     elif op == '-O': reposet = 'osg'
     elif op == '-C': reposet = 'centos'
     elif op == '-E': reposet = 'epel'
+    elif op == '-J': reposet = 'jpackage'
     elif op == '-r': osgrepo = val
     elif op == '-o': osgser = val
     else           : epels += [int(op[1:])]
@@ -118,6 +120,19 @@ def centos_baseurl_ex(el, what):
 
 def centos_cachename_ex(el, what):
     return "centos%d.%s" % (el, what)
+
+
+def jpackage_baseurl_ex(el, what):
+    #whatpath = 'SRPMS.free' if what == 'SRPMS' else 'RPMS'
+    #basefmt = 'http://mirror.batlab.org/pub/jpackage/%d/%s'
+    whatpath = 'free'
+    basefmt = 'http://mirrors.dotsrc.org/jpackage/%d.0/generic/%s'
+    return basefmt % (el, whatpath)
+
+def jpackage_cachename_ex(el, what):
+    #whatpath = what if what == 'SRPMS' else 'RPMS'
+    whatpath = 'free'
+    return "jpackage%d.%s" % (el, whatpath)
 
 
 def epel_baseurl_ex(el, what):
@@ -255,7 +270,7 @@ def download(url):
     open(dest, "w").write(handle.read())
     msg()
 
-def getsql():
+def getsql(what):
     match = 'spkg' if matchspkg else 'name'
 
     def like(name):
@@ -266,9 +281,14 @@ def getsql():
     else:
         nameclause = match + " in (" + ','.join('?' for x in pkg_names) + ")"
 
+    if what == 'SRPMS':
+        archclause = "arch = 'src'"
+    else:
+        archclause = "arch not in ('i386','i686','src')"
+
     select = ("select location_href, vrstrip(rpm_sourcerpm) spkg,"
                     " name, epoch, version, release from packages")
-    where  = "where (%s) and arch not in ('i386','i686')" % nameclause 
+    where  = "where (%s) and (%s)" % (nameclause, archclause)
     if printspkg:
         orderby = "order by rpm_sourcerpm, name, version, release, arch"
     else:
@@ -324,7 +344,7 @@ def run_for_repo(info):
     db.create_function("vrstrip", 1, vrstrip)
     c  = db.cursor()
 
-    sql = getsql()
+    sql = getsql(what)
     c.execute(sql, pkg_names)
 
     for href,spkg in maxnvr_stunt(c):
