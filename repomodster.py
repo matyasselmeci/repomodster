@@ -123,12 +123,15 @@ def centos_cachename_ex(el, what):
 
 
 def jpackage_baseurl_ex(el, what):
-    whatpath = what if what == 'SRPMS' else 'RPMS'
-    basefmt = 'http://mirror.batlab.org/pub/jpackage/%d/%s'
+    #whatpath = 'SRPMS.free' if what == 'SRPMS' else 'RPMS'
+    #basefmt = 'http://mirror.batlab.org/pub/jpackage/%d/%s'
+    whatpath = 'free'
+    basefmt = 'http://mirrors.dotsrc.org/jpackage/%d.0/generic/%s'
     return basefmt % (el, whatpath)
 
 def jpackage_cachename_ex(el, what):
-    whatpath = what if what == 'SRPMS' else 'RPMS'
+    #whatpath = what if what == 'SRPMS' else 'RPMS'
+    whatpath = 'free'
     return "jpackage%d.%s" % (el, whatpath)
 
 
@@ -267,7 +270,7 @@ def download(url):
     open(dest, "w").write(handle.read())
     msg()
 
-def getsql():
+def getsql(what):
     match = 'spkg' if matchspkg else 'name'
 
     def like(name):
@@ -278,9 +281,14 @@ def getsql():
     else:
         nameclause = match + " in (" + ','.join('?' for x in pkg_names) + ")"
 
+    if what == 'SRPMS':
+        archclause = "arch = 'src'"
+    else:
+        archclause = "arch not in ('i386','i686','src')"
+
     select = ("select location_href, vrstrip(rpm_sourcerpm) spkg,"
                     " name, epoch, version, release from packages")
-    where  = "where (%s) and arch not in ('i386','i686')" % nameclause 
+    where  = "where (%s) and (%s)" % (nameclause, archclause)
     if printspkg:
         orderby = "order by rpm_sourcerpm, name, version, release, arch"
     else:
@@ -336,7 +344,7 @@ def run_for_repo(info):
     db.create_function("vrstrip", 1, vrstrip)
     c  = db.cursor()
 
-    sql = getsql()
+    sql = getsql(what)
     c.execute(sql, pkg_names)
 
     for href,spkg in maxnvr_stunt(c):
