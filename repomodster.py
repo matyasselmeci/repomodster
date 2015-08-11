@@ -278,11 +278,16 @@ def maxnvr_stunt(c):
         if n not in nd:
             nd[n] = {}
             nnn.append(n)
-        nd[n][e,v,r] = [href, spkg, n,e,v,r]
+        nd[n][e,v,r] = [href, spkg]
 
-    for n in nnn:
-        nvr = maxrpmver(nd[n].keys())
-        yield nd[n][nvr]
+    if maxnvr:
+        for n in nnn:
+            nvr = maxrpmver(nd[n].keys())
+            yield nd[n][nvr]
+    else:
+        for n in nnn:
+            for nvr in sorted(nd[n], cmp=rpmvercmp):
+                yield nd[n][nvr]
 
 def run_for_repo(info):
     do_cache_setup(info)
@@ -295,7 +300,7 @@ def run_for_repo(info):
     sql = getsql()
     c.execute(sql, pkg_names)
 
-    for href,spkg,n,e,v,r in (maxnvr_stunt(c) if maxnvr else c):
+    for href,spkg in maxnvr_stunt(c):
         if printspkg and what == 'x86_64':
             print "[%s]" % spkg,
         if printurl:
