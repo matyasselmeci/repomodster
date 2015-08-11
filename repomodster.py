@@ -95,7 +95,9 @@ def osg_baseurl_ex(el, what):
     return basefmt % (osgser, el, osgrepo, whatpath)
 
 def osg_cachename_ex(el, what):
-    return "osg-%s-el%d.%s" % (osgser, el, what)
+    if re.search(r'\W', osgrepo):
+        fail("[%s] is not a healthy repo name..." % osgrepo)
+    return "osg-%s-el%d-%s.%s" % (osgser, el, osgrepo, what)
 
 
 def centos_baseurl_ex(el, what):
