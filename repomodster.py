@@ -123,7 +123,7 @@ def get_epel_info(el, what):
     return info
 
 def get_reposet_info(el, what):
-    return sys.modules[__name__].__dict__["get_%s_info" % reposet](el, what)
+    return getattr(sys.modules[__name__], "get_%s_info" % reposet)(el, what)
 
 def msg(m=""):
     if sys.stderr.isatty():
