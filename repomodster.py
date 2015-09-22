@@ -20,7 +20,7 @@ except ImportError:  # if sys.version_info[0:2] == (2,4):
     import elementtree.ElementTree as et
 
 def usage(status=0):
-    print "usage: %s [-ubsScmdOCEJ567] [-o series] [-r repo] PACKAGE [...]" \
+    print "usage: %s [-ubsScadOCEJ567] [-o series] [-r repo] PACKAGE [...]" \
           % script
     print
     print "each PACKAGE can be a full package name or contain '%' wildcards"
@@ -31,7 +31,8 @@ def usage(status=0):
     print "  -s   print source package name too"
     print "  -S   match source package names for binary package list"
     print "  -c   always use cached primary db (don't attempt to update)"
-    print "  -m   only list 1 rpm (max NVR) per package name, per repo"
+#   print "  -m   only list 1 rpm (max NVR) per package name, per repo"
+    print "  -a   show all versions of each package; default max VR per repo"
     print "  -d   download matching rpm(s)"
     print "  -O   use OSG repos  (defaults: -o %s -r %s)" % (osgser, osgrepo)
     print "  -C   use Centos repos"
@@ -58,14 +59,15 @@ printspkg = False
 matchspkg = False
 autoupdate = True
 downloadrpms = False
-maxnvr = False
+# maxnvr = False
+maxnvr = True
 stale_cache_age = 3600   # seconds
 reposet = get_default_reposet()
 osgser = '3.2'
 osgrepo = 'release'
 
 try:
-    ops,pkg_names = getopt.getopt(sys.argv[1:], 'ubsScmdOCEJ567r:o:')
+    ops,pkg_names = getopt.getopt(sys.argv[1:], 'ubsScadOCEJ567r:o:')
 except getopt.GetoptError:
     usage()
 
@@ -75,7 +77,8 @@ for op,val in ops:
     elif op == '-s': printspkg = True
     elif op == '-S': matchspkg = True
     elif op == '-c': autoupdate = False
-    elif op == '-m': maxnvr = True
+#   elif op == '-m': maxnvr = True
+    elif op == '-a': maxnvr = False
     elif op == '-d': downloadrpms = True
     elif op == '-O': reposet = 'osg'
     elif op == '-C': reposet = 'centos'
