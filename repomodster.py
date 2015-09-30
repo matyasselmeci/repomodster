@@ -20,7 +20,7 @@ except ImportError:  # if sys.version_info[0:2] == (2,4):
     import elementtree.ElementTree as et
 
 def usage(status=0):
-    print "usage: %s [-ubsScadOCEJL567] [-o series] [-r repo] PACKAGE [...]" \
+    print "usage: %s [-ubsScadOCEJLF567] [-o series] [-r repo] PACKAGE [...]" \
           % script
     print
     print "each PACKAGE can be a full package name or contain '%' wildcards"
@@ -37,7 +37,8 @@ def usage(status=0):
     print "  -O   use OSG repos  (defaults: -o %s -r %s)" % (osgser, osgrepo)
     print "  -C   use CentOS repos"
     print "  -J   use JPackage repos"
-    print "  -L   Scientific Linux repos"
+    print "  -L   Scientific Linux (SL) repos"
+    print "  -F   Scientific Linux Fermi (SLF) repos"
     print "  -E   use EPEL repos"
     print "  -5,-6,-7   specify EL release series (default=%d)" % default_epel
     print
@@ -47,7 +48,7 @@ def usage(status=0):
     sys.exit(status)
 
 def get_default_reposet():
-    m = re.search(r'^(osg|epel|centos|jpackage|scientific)-srpms$', script)
+    m = re.search(r'^(osg|epel|centos|jpackage|scientific|slf)-srpms$', script)
     return m.group(1) if m else 'epel'
 
 script = os.path.basename(__file__)
@@ -68,7 +69,7 @@ osgser = '3.2'
 osgrepo = 'release'
 
 try:
-    ops,pkg_names = getopt.getopt(sys.argv[1:], 'ubsScadOCEJL567r:o:')
+    ops,pkg_names = getopt.getopt(sys.argv[1:], 'ubsScadOCEJLF567r:o:')
 except getopt.GetoptError:
     usage()
 
@@ -86,6 +87,7 @@ for op,val in ops:
     elif op == '-E': reposet = 'epel'
     elif op == '-J': reposet = 'jpackage'
     elif op == '-L': reposet = 'scientific'
+    elif op == '-F': reposet = 'slf'
     elif op == '-r': osgrepo = val
     elif op == '-o': osgser = val
     else           : epels += [int(op[1:])]
@@ -143,6 +145,19 @@ def scientific_baseurl_ex(el, what):
 
 def scientific_cachename_ex(el, what):
     return "scientific%d.%s" % (el, what)
+
+
+def slf_baseurl_ex(el, what):
+    basefmt = 'http://ftp.scientificlinux.org/linux/fermi/slf%d/%s'
+    if what != 'SRPMS':
+        if el == 5:
+            basefmt += '/SL'
+        else:
+            basefmt += '/os'
+    return basefmt % (el, what)
+
+def slf_cachename_ex(el, what):
+    return "slf%d.%s" % (el, what)
 
 
 def jpackage_baseurl_ex(el, what):
