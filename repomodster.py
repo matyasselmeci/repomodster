@@ -371,8 +371,11 @@ def main():
     if not pkg_names:
         usage()
 
+    n = 0
     for info in ( get_reposet_info(epel, what) for epel in epels ):
-        run_for_repo(info)
+        n += run_for_repo(info)
+
+    return n == 0
 
 def maxnvr_stunt(c):
     nnn = []
@@ -400,7 +403,9 @@ def run_for_repo(info):
     sql = getsql(what)
     c.execute(sql, pkg_names)
 
+    n = 0
     for href,spkg in maxnvr_stunt(c):
+        n += 1
         if printspkg and what == 'x86_64':
             print "[%s]" % spkg,
         if printurl:
@@ -410,6 +415,8 @@ def run_for_repo(info):
         if downloadrpms:
             download(info.baseurl + "/" + href)
 
+    return n
+
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
 
