@@ -65,7 +65,7 @@ downloadrpms = False
 maxnvr = True
 stale_cache_age = 3600   # seconds
 reposet = get_default_reposet()
-osgser = '3.2'
+osgser = '3.3'
 osgrepo = 'release'
 
 try:
