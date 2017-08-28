@@ -167,7 +167,10 @@ def fedora_baseurl_ex(el, what):
     basefmt = ('http://download.fedoraproject.org/pub/fedora/linux/releases/'
               '%d/Everything')
     if what == 'SRPMS':
-        basefmt += '/source/tree'
+        if fedora >= 24:
+            basefmt += '/source/tree'
+        else:
+            basefmt += '/source/SRPMS'
         return basefmt % fedora
     else:
         basefmt += '/%s/os'
