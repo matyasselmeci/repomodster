@@ -163,6 +163,7 @@ def slf_baseurl_ex(el, what):
 def slf_cachename_ex(el, what):
     return "slf%d.%s" % (el, what)
 
+
 def fedora_baseurl_ex(el, what):
     basefmt = ('http://download.fedoraproject.org/pub/fedora/linux/releases/'
               '%d/Everything')
@@ -178,6 +179,7 @@ def fedora_baseurl_ex(el, what):
 
 def fedora_cachename_ex(el, what):
     return "fedora%d.%s" % (fedora, what)
+
 
 def jpackage_baseurl_ex(el, what):
     #whatpath = 'SRPMS.free' if what == 'SRPMS' else 'RPMS'
