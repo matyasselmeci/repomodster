@@ -40,6 +40,7 @@ def usage(status=0):
     print "  -L   Scientific Linux (SL) repos"
     print "  -F   Scientific Linux Fermi (SLF) repos"
     print "  -E   use EPEL repos"
+    print "  -f%d use fedora-%d repos" % (fedora, fedora)
     print "  -5,-6,-7   specify EL release series (default=%d)" % default_epel
     print
     print "  -o series  use osg series (3.3, 3.4, upcoming)"
@@ -48,12 +49,14 @@ def usage(status=0):
     sys.exit(status)
 
 def get_default_reposet():
-    m = re.search(r'^(osg|epel|centos|jpackage|scientific|slf)-srpms$', script)
-    return m.group(1) if m else 'epel'
+    repos = set("osg epel centos jpackage scientific slf fedora".split())
+    m = re.search(r'^(\w+)-srpms$', script)
+    return m.group(1) if m and m.group(1) in repos else 'epel'
 
 script = os.path.basename(__file__)
 cachedir  = os.getenv('HOME') + "/.cache/epeldb"
 default_epel = 6
+fedora = 26
 epels = []
 what = 'SRPMS'
 printurl = False
@@ -69,7 +72,7 @@ osgser = '3.4'
 osgrepo = 'release'
 
 try:
-    ops,pkg_names = getopt.getopt(sys.argv[1:], 'ubsScadOCEJLF567r:o:')
+    ops,pkg_names = getopt.getopt(sys.argv[1:], 'ubsScadOCEJLF567r:o:f:')
 except getopt.GetoptError:
     usage()
 
@@ -90,6 +93,7 @@ for op,val in ops:
     elif op == '-F': reposet = 'slf'
     elif op == '-r': osgrepo = val
     elif op == '-o': osgser = val
+    elif op == '-f': reposet = 'fedora'; fedora = int(val)
     else           : epels += [int(op[1:])]
 
 if len(epels) == 0:
@@ -159,6 +163,18 @@ def slf_baseurl_ex(el, what):
 def slf_cachename_ex(el, what):
     return "slf%d.%s" % (el, what)
 
+def fedora_baseurl_ex(el, what):
+    basefmt = ('http://download.fedoraproject.org/pub/fedora/linux/releases/'
+              '%d/Everything')
+    if what == 'SRPMS':
+        basefmt += '/source/tree'
+        return basefmt % fedora
+    else:
+        basefmt += '/%s/os'
+        return basefmt % (fedora, what)
+
+def fedora_cachename_ex(el, what):
+    return "fedora%d.%s" % (fedora, what)
 
 def jpackage_baseurl_ex(el, what):
     #whatpath = 'SRPMS.free' if what == 'SRPMS' else 'RPMS'
