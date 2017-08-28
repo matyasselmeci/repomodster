@@ -42,7 +42,7 @@ def usage(status=0):
     print "  -E   use EPEL repos"
     print "  -5,-6,-7   specify EL release series (default=%d)" % default_epel
     print
-    print "  -o series  use osg series (3.2, 3.3, upcoming)"
+    print "  -o series  use osg series (3.3, 3.4, upcoming)"
     print "  -r repo    use osg repo (development, testing, release)"
     print
     sys.exit(status)
@@ -65,7 +65,7 @@ downloadrpms = False
 maxnvr = True
 stale_cache_age = 3600   # seconds
 reposet = get_default_reposet()
-osgser = '3.3'
+osgser = '3.4'
 osgrepo = 'release'
 
 try:
