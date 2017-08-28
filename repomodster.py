@@ -13,6 +13,7 @@ import time
 import getopt
 import urllib2
 import sqlite3
+import hashlib
 
 try:
     import xml.etree.ElementTree as et
@@ -20,7 +21,7 @@ except ImportError:  # if sys.version_info[0:2] == (2,4):
     import elementtree.ElementTree as et
 
 def usage(status=0):
-    print "usage: %s [-ubsScadOCEJLF567] [-o series] [-r repo] PACKAGE [...]" \
+    print "usage: %s [-ubsScadOCEJLFG567] [-o series] [-r repo] PACKAGE [...]" \
           % script
     print
     print "each PACKAGE can be a full package name or contain '%' wildcards"
@@ -40,6 +41,7 @@ def usage(status=0):
     print "  -L   Scientific Linux (SL) repos"
     print "  -F   Scientific Linux Fermi (SLF) repos"
     print "  -E   use EPEL repos"
+    print "  -G   use generic rpm repo: set SRPM_BASEURL/RPM_BASEURL as needed"
     print "  -f%d use fedora-%d repos" % (fedora, fedora)
     print "  -5,-6,-7   specify EL release series (default=%d)" % default_epel
     print
@@ -49,7 +51,7 @@ def usage(status=0):
     sys.exit(status)
 
 def get_default_reposet():
-    repos = set("osg epel centos jpackage scientific slf fedora".split())
+    repos = "osg epel centos jpackage scientific slf fedora generic".split()
     m = re.search(r'^(\w+)-srpms$', script)
     return m.group(1) if m and m.group(1) in repos else 'epel'
 
@@ -72,7 +74,7 @@ osgser = '3.4'
 osgrepo = 'release'
 
 try:
-    ops,pkg_names = getopt.getopt(sys.argv[1:], 'ubsScadOCEJLF567r:o:f:')
+    ops,pkg_names = getopt.getopt(sys.argv[1:], 'ubsScadOCEJLFG567r:o:f:')
 except getopt.GetoptError:
     usage()
 
@@ -202,6 +204,18 @@ def epel_baseurl_ex(el, what):
 
 def epel_cachename_ex(el, what):
     return "epel%d.%s" % (el, what)
+
+
+def generic_baseurl_ex(el, what):
+    envname = '%s_BASEURL' % (what if what == 'SRPMS' else 'RPMS')
+    if envname not in os.environ:
+        print >>sys.stderr, "Please set %s" % envname
+        sys.exit(1)
+    return os.environ[envname].rstrip('/')
+
+def generic_cachename_ex(el, what):
+    cachename = hashlib.md5(generic_baseurl_ex(el, what)).hexdigest()
+    return "generic-%s.%s" % (cachename, what)
 
 
 def get_reposet_info(el, what):
