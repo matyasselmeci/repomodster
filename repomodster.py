@@ -41,7 +41,7 @@ def usage(status=0):
     print "  -L   Scientific Linux (SL) repos"
     print "  -F   Scientific Linux Fermi (SLF) repos"
     print "  -E   use EPEL repos"
-    print "  -G   use generic rpm repo: set SRPM_BASEURL/RPM_BASEURL as needed"
+    print "  -G   use generic rpm repo: set [S]RPMS_BASEURL as needed"
     print "  -f%d use fedora-%d repos" % (fedora, fedora)
     print "  -5,-6,-7   specify EL release series (default=%d)" % default_epel
     print
