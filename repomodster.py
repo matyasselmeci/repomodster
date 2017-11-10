@@ -51,9 +51,8 @@ def usage(status=0):
     sys.exit(status)
 
 def get_default_reposet():
-    repos = "osg epel centos jpackage scientific slf fedora generic".split()
-    m = re.search(r'^(\w+)-srpms$', script)
-    return m.group(1) if m and m.group(1) in repos else 'epel'
+    m = re.search(r'^([a-z]\w*)-srpms$', script)
+    return m.group(1) if m else 'epel'
 
 script = os.path.basename(__file__)
 cachedir  = os.getenv('HOME') + "/.cache/epeldb"
