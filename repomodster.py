@@ -250,6 +250,9 @@ def get_repomd_xml(info):
 def is_pdb(x):
     return x.get('type') == 'primary_db'
 
+def is_primary(x):
+    return x.get('type') == 'primary'
+
 def cache_exists(info):
     return os.path.exists(info.cachets) and os.path.exists(info.cachedb)
 
@@ -282,7 +285,36 @@ def snoop_primary_db(info):
     if m:
         return "%s/repodata/%s" % (info.baseurl, m.group(1))
     else:
-        fail("Can't find primary_db under %s/repodata" % info.baseurl)
+        raise RuntimeError("Can't find primary_db under %s/repodata" %
+                           info.baseurl)
+
+def pkg_et2row(pkg):
+    name = pkg.find('name').text
+    arch = pkg.find('arch').text
+    vvv  = pkg.find('version')
+    epoch   = vvv.get('epoch')
+    version = vvv.get('ver')
+    release = vvv.get('rel')
+    rpm_sourcerpm = pkg.find('format').find('rpm_sourcerpm').text
+    location_href = pkg.find('location').get('href')
+    return name, arch, version, epoch, release, rpm_sourcerpm, location_href
+
+def convert_primary_xml2db(xml, cachedb):
+    db = sqlite3.connect(cachedb)
+    c  = db.cursor()
+    c.execute("create table packages "
+              "(name, arch, version, epoch, release, "
+              "rpm_sourcerpm, location_href);");
+    c.execute("CREATE INDEX packagename ON packages (name);");
+
+    xml = re.sub(r'<metadata xmlns="[^"]+"', '<metadata', xml)
+    xml = re.sub(r'<metadata xmlns:rpm="[^"]+"', '<metadata', xml)
+    xml = re.sub(r'<(/?)rpm:', r'<\1rpm_', xml)
+    xmltree = et.fromstring(xml)
+    rows = map(pkg_et2row, xmltree.findall('package'))
+    c.executemany("insert into packages values (?,?,?,?,?,?,?);", rows)
+    db.commit()
+    db.close()
 
 def update_cache(info):
     msg("fetching latest repomd.xml...")
@@ -295,8 +327,14 @@ def update_cache(info):
         primary_url = info.baseurl + '/' + primary_href
         primary_ts = float(primary.find('timestamp').text)
     except IndexError:
-        primary_url = snoop_primary_db(info)
-        primary_ts = get_lmd(primary_url)
+        try:
+            primary_url = snoop_primary_db(info)
+            primary_ts = get_lmd(primary_url)
+        except RuntimeError:
+            primary = filter(is_primary, datas)[0]
+            primary_href = primary.find('location').get('href')
+            primary_url = info.baseurl + '/' + primary_href
+            primary_ts = float(primary.find('timestamp').text)
 
     if not os.path.exists(cachedir):
         os.makedirs(cachedir)
@@ -317,16 +355,21 @@ def update_cache(info):
 #                    , 'sqlite' : datafilter(None)
 #                    }[ext](primary_zip)
 
-        if primary_url.endswith('.xz'):
-            primary_db = xyz_decompress(primary_zip, 'xz')
-        elif primary_url.endswith('.gz'):
-            primary_db = xyz_decompress(primary_zip, 'gzip')
-        elif primary_url.endswith('.bz2'):
-            primary_db = bz2.decompress(primary_zip)
+        if primary_url.endswith('.xml.gz'):
+            primary_xml = xyz_decompress(primary_zip, 'gzip')
+            msg("converting primary.xml to sqlite db...")
+            convert_primary_xml2db(primary_xml, info.cachedb)
         else:
-            fail("what kind of compression is '%s' using?" % primary_url)
-        msg("saving cache...")
-        open(info.cachedb, "w").write(primary_db)
+            if primary_url.endswith('.xz'):
+                primary_db = xyz_decompress(primary_zip, 'xz')
+            elif primary_url.endswith('.gz'):
+                primary_db = xyz_decompress(primary_zip, 'gzip')
+            elif primary_url.endswith('.bz2'):
+                primary_db = bz2.decompress(primary_zip)
+            else:
+                fail("what kind of compression is '%s' using?" % primary_url)
+            msg("saving cache...")
+            open(info.cachedb, "w").write(primary_db)
         print >>open(info.cachets, "w"), primary_ts
         msg()
     else:
