@@ -38,6 +38,7 @@ def usage(status=0):
     print "  -O   use OSG repos  (defaults: -o %s -r %s)" % (osgser, osgrepo)
     print "  -C   use CentOS repos"
     print "  -J   use JPackage repos"
+    print "  -D%d  use cloudera (cdh%d) repos" % (cloudera_cdh, cloudera_cdh)
     print "  -L   Scientific Linux (SL) repos"
     print "  -F   Scientific Linux Fermi (SLF) repos"
     print "  -E   use EPEL repos"
@@ -71,9 +72,10 @@ stale_cache_age = 3600   # seconds
 reposet = get_default_reposet()
 osgser = '3.4'
 osgrepo = 'release'
+cloudera_cdh = 5
 
 try:
-    ops,pkg_names = getopt.getopt(sys.argv[1:], 'ubsScadOCEJLFG567r:o:f:')
+    ops,pkg_names = getopt.getopt(sys.argv[1:], 'ubsScadOCEJLFG567r:o:f:D:')
 except getopt.GetoptError:
     usage()
 
@@ -92,6 +94,7 @@ for op,val in ops:
     elif op == '-J': reposet = 'jpackage'
     elif op == '-L': reposet = 'scientific'
     elif op == '-F': reposet = 'slf'
+    elif op == '-D': reposet = 'cloudera'; cloudera_cdh = int(val)
     elif op == '-r': osgrepo = val
     elif op == '-o': osgser = val
     elif op == '-f': reposet = 'fedora'; fedora = int(val)
@@ -132,6 +135,13 @@ def centos_baseurl_ex(el, what):
 
 def centos_cachename_ex(el, what):
     return "centos%d.%s" % (el, what)
+
+def cloudera_baseurl_ex(el, what):
+    basefmt = 'http://archive.cloudera.com/cdh%d/redhat/%d/x86_64/cdh/%d'
+    return basefmt % (cloudera_cdh, el, cloudera_cdh)
+
+def cloudera_cachename_ex(el, what):
+    return "cloudera-cdh%d-el%d.%s" % (cloudera_cdh, el, what)
 
 
 def scientific_baseurl_ex(el, what):
