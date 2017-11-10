@@ -228,6 +228,7 @@ def get_reposet_info(el, what):
     cachename     = cachename_ex(el, what)
     info.cachets  = cachedir + "/primary.%s.ts" % cachename
     info.cachedb  = cachedir + "/primary.%s.db" % cachename
+    info.cachebu  = cachedir + "/primary.%s.baseurl" % cachename
     return info
 
 
@@ -371,6 +372,7 @@ def update_cache(info):
             msg("saving cache...")
             open(info.cachedb, "w").write(primary_db)
         print >>open(info.cachets, "w"), primary_ts
+        print >>open(info.cachebu, "w"), info.baseurl
         msg()
     else:
         # touch ts file to mark as recent
