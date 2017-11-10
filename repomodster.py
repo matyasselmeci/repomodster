@@ -48,6 +48,8 @@ def usage(status=0):
     print "  -o series  use osg series (3.3, 3.4, upcoming)"
     print "  -r repo    use osg repo (development, testing, release)"
     print
+    print "  -H repo    use UW HTCondor repo (stable, development)"
+    print
     sys.exit(status)
 
 def get_default_reposet():
@@ -71,10 +73,11 @@ stale_cache_age = 3600   # seconds
 reposet = get_default_reposet()
 osgser = '3.4'
 osgrepo = 'release'
+condorrepo = 'development'
 cloudera_cdh = 5
 
 try:
-    ops,pkg_names = getopt.getopt(sys.argv[1:], 'ubsScadOCEJLFG567r:o:f:D:')
+    ops,pkg_names = getopt.getopt(sys.argv[1:], 'ubsScadOCEJLFG567r:o:f:D:H:')
 except getopt.GetoptError:
     usage()
 
@@ -95,6 +98,7 @@ for op,val in ops:
     elif op == '-F': reposet = 'slf'
     elif op == '-D': reposet = 'cloudera'; cloudera_cdh = int(val)
     elif op == '-r': osgrepo = val
+    elif op == '-H': reposet = 'htcondor'; condorrepo = val
     elif op == '-o': osgser = val
     elif op == '-f': reposet = 'fedora'; fedora = int(val)
     else           : epels += [int(op[1:])]
@@ -135,12 +139,21 @@ def centos_baseurl_ex(el, what):
 def centos_cachename_ex(el, what):
     return "centos%d.%s" % (el, what)
 
+
 def cloudera_baseurl_ex(el, what):
     basefmt = 'http://archive.cloudera.com/cdh%d/redhat/%d/x86_64/cdh/%d'
     return basefmt % (cloudera_cdh, el, cloudera_cdh)
 
 def cloudera_cachename_ex(el, what):
     return "cloudera-cdh%d-el%d.%s" % (cloudera_cdh, el, what)
+
+
+def htcondor_baseurl_ex(el, what):
+    basefmt = 'http://research.cs.wisc.edu/htcondor/yum/%s/rhel%d'
+    return basefmt % (condorrepo, el)
+
+def htcondor_cachename_ex(el, what):
+    return "htcondor-%s-rhel%d.%s" % (condorrepo, el, what)
 
 
 def scientific_baseurl_ex(el, what):
