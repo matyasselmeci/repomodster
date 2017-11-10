@@ -21,8 +21,7 @@ except ImportError:  # if sys.version_info[0:2] == (2,4):
     import elementtree.ElementTree as et
 
 def usage(status=0):
-    print "usage: %s [-ubsScadOCEJLFG567] [-o series] [-r repo] PACKAGE [...]" \
-          % script
+    print "usage: %s [OPTIONS] PACKAGE [...]" % script
     print
     print "each PACKAGE can be a full package name or contain '%' wildcards"
     print
