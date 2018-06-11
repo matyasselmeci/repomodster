@@ -117,7 +117,7 @@ def getfn(name):
 
 def osg_baseurl_ex(el, what):
     whatpath = 'source/SRPMS' if what == 'SRPMS' else what
-    basefmt  = 'http://repo.grid.iu.edu/osg/%s/el%d/%s/%s'
+    basefmt  = 'http://repo.opensciencegrid.org/osg/%s/el%d/%s/%s'
     return basefmt % (osgser, el, osgrepo, whatpath)
 
 def osg_cachename_ex(el, what):
