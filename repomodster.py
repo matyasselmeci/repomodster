@@ -322,6 +322,8 @@ def pkg_et2row(pkg):
     return name, arch, version, epoch, release, rpm_sourcerpm, location_href
 
 def convert_primary_xml2db(xml, cachedb):
+    if os.path.exists(cachedb):
+        os.unlink(cachedb)
     db = sqlite3.connect(cachedb)
     c  = db.cursor()
     c.execute("create table packages "
