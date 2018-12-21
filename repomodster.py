@@ -188,7 +188,7 @@ def slf_cachename_ex(el, what):
 
 
 def fedora_baseurl_ex(el, what):
-    basefmt = ('http://download.fedoraproject.org/pub/fedora/linux/releases/'
+    basefmt = ('https://mirror.chpc.utah.edu/pub/fedora/linux/releases/'
               '%d/Everything')
     if what == 'SRPMS':
         if fedora >= 24:
