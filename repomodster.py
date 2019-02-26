@@ -15,10 +15,7 @@ import urllib2
 import sqlite3
 import hashlib
 
-try:
-    import xml.etree.ElementTree as et
-except ImportError:  # if sys.version_info[0:2] == (2,4):
-    import elementtree.ElementTree as et
+import xml.etree.ElementTree as et
 
 def usage(status=0):
     print "usage: %s [OPTIONS] PACKAGE [...]" % script
@@ -43,7 +40,7 @@ def usage(status=0):
     print "  -E   use EPEL repos"
     print "  -G   use generic rpm repo: set [S]RPMS_BASEURL as needed"
     print "  -f%d use fedora-%d repos" % (fedora, fedora)
-    print "  -6,-7   specify EL release series (default=%d)" % default_epel
+    print "  -6,-7,-8   specify EL release series (default=%d)" % default_epel
     print
     print "  -o series  use osg series (3.3, 3.4, upcoming)"
     print "  -r repo    use osg repo (development, testing, release)"
@@ -77,7 +74,7 @@ condorrepo = 'development'
 cloudera_cdh = 5
 
 try:
-    ops,pkg_names = getopt.getopt(sys.argv[1:], 'ubsScadOCEJLFG67r:o:f:D:H:')
+    ops,pkg_names = getopt.getopt(sys.argv[1:], 'ubsScadOCEJLFG678r:o:f:D:H:')
 except getopt.GetoptError:
     usage()
 
