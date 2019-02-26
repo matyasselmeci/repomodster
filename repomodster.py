@@ -43,7 +43,7 @@ def usage(status=0):
     print "  -E   use EPEL repos"
     print "  -G   use generic rpm repo: set [S]RPMS_BASEURL as needed"
     print "  -f%d use fedora-%d repos" % (fedora, fedora)
-    print "  -5,-6,-7   specify EL release series (default=%d)" % default_epel
+    print "  -6,-7   specify EL release series (default=%d)" % default_epel
     print
     print "  -o series  use osg series (3.3, 3.4, upcoming)"
     print "  -r repo    use osg repo (development, testing, release)"
@@ -58,8 +58,8 @@ def get_default_reposet():
 
 script = os.path.basename(__file__)
 cachedir  = os.getenv('HOME') + "/.cache/epeldb"
-default_epel = 6
-fedora = 26
+default_epel = 7
+fedora = 29
 epels = []
 what = 'SRPMS'
 printurl = False
@@ -77,7 +77,7 @@ condorrepo = 'development'
 cloudera_cdh = 5
 
 try:
-    ops,pkg_names = getopt.getopt(sys.argv[1:], 'ubsScadOCEJLFG567r:o:f:D:H:')
+    ops,pkg_names = getopt.getopt(sys.argv[1:], 'ubsScadOCEJLFG67r:o:f:D:H:')
 except getopt.GetoptError:
     usage()
 
@@ -117,7 +117,7 @@ def getfn(name):
 
 def osg_baseurl_ex(el, what):
     whatpath = 'source/SRPMS' if what == 'SRPMS' else what
-    basefmt  = 'http://repo.opensciencegrid.org/osg/%s/el%d/%s/%s'
+    basefmt  = 'https://repo.opensciencegrid.org/osg/%s/el%d/%s/%s'
     return basefmt % (osgser, el, osgrepo, whatpath)
 
 def osg_cachename_ex(el, what):
@@ -129,11 +129,11 @@ def osg_cachename_ex(el, what):
 def centos_baseurl_ex(el, what):
     if what == 'SRPMS':
         whatpath = 'Source'
-        basefmt = 'http://vault.centos.org/centos/%d/os/%s'
+        basefmt = 'https://vault.centos.org/centos/%d/os/%s'
     else:
         # centos mirrors don't seem to have Source pkgs
         whatpath = what
-        basefmt = 'http://mirror.batlab.org/pub/linux/centos/%d/os/%s'
+        basefmt = 'https://mirror.centos.org/centos/%d/os/%s'
     return basefmt % (el, whatpath)
 
 def centos_cachename_ex(el, what):
@@ -218,9 +218,9 @@ def jpackage_cachename_ex(el, what):
 
 
 def epel_baseurl_ex(el, what):
-    basefmt = 'http://mirror.batlab.org/pub/linux/epel/%d/%s'
+    #basefmt = 'http://mirror.batlab.org/pub/linux/epel/%d/%s'
     #basefmt = 'http://ftp.osuosl.org/pub/fedora-epel/%d/%s'
-    #basefmt = 'http://dl.fedoraproject.org/pub/epel/%d/%s'
+    basefmt = 'https://dl.fedoraproject.org/pub/epel/%d/%s'
     return basefmt % (el, what)
 
 def epel_cachename_ex(el, what):
